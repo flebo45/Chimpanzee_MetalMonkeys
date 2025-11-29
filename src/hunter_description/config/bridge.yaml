@@ -1,0 +1,42 @@
+# 1. Comandi di movimento (ROS -> Gazebo)
+- ros_topic_name: /cmd_vel
+  gz_topic_name: /cmd_vel
+  ros_type_name: geometry_msgs/msg/Twist
+  gz_type_name: gz.msgs.Twist
+  direction: ROS_TO_GZ
+
+# 2. Odometria (Gazebo -> ROS)
+- ros_topic_name: /odom
+  gz_topic_name: /odom
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: gz.msgs.Odometry
+  direction: GZ_TO_ROS
+
+# 3. Telecamera (Gazebo -> ROS)
+- ros_topic_name: /camera/image_raw
+  gz_topic_name: /camera/image_raw
+  ros_type_name: sensor_msgs/msg/Image
+  gz_type_name: gz.msgs.Image
+  direction: GZ_TO_ROS
+
+# 4. LiDAR Laser Scan (Gazebo -> ROS) - FONDAMENTALE PER TE
+- ros_topic_name: /scan
+  gz_topic_name: /scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+
+# 5. Trasformazioni TF (Gazebo -> ROS)
+- ros_topic_name: /tf
+  gz_topic_name: /tf
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS
+
+# 6. Stato dei Giunti/Ruote (Gazebo -> ROS) - FONDAMENTALE PER RVIZ
+# Nota: il topic Gazebo qui è lungo perché Gazebo lo genera così di default
+- ros_topic_name: /joint_states
+  gz_topic_name: /world/empty/model/isr_bot/joint_state
+  ros_type_name: sensor_msgs/msg/JointState
+  gz_type_name: gz.msgs.Model
+  direction: GZ_TO_ROS
