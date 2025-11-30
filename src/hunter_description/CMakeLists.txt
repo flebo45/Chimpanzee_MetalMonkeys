@@ -9,7 +9,7 @@ find_package(ament_cmake REQUIRED)
 
 # Installa le cartelle fondamentali
 install(
-  DIRECTORY launch urdf config
+  DIRECTORY launch urdf config worlds
   DESTINATION share/${PROJECT_NAME}
 )
 

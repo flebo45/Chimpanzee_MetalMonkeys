@@ -15,18 +15,35 @@ def generate_launch_description():
     doc = xacro.process_file(xacro_file)
     robot_desc = doc.toxml()
 
+    # 1b. Trova il file della PALLINA
+    ball_file = os.path.join(pkg_share, 'urdf', 'red_ball.sdf')
+
+    # 1c. Definisci il file del mondo (Hexagon)
+    world_file = os.path.join(pkg_share, 'worlds', 'hexagon_world.sdf')
+
     # 2. Avvia Gazebo
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items(),
+        launch_arguments={'gz_args': f'-r {world_file}'}.items(),
     )
 
     # 3. Spawna il Robot
-    spawn = Node(
+    spawn_robot = Node(
         package='ros_gz_sim', executable='create',
-        arguments=['-name', 'isr_bot', '-topic', 'robot_description', '-z', '0.1'],
+        arguments=['-name', 'isr_bot', 
+                   '-topic', 'robot_description', 
+                   '-x', '-4.0', '-y', '0.0', '-z', '0.2'], # Posizione Start Robot
+        output='screen'
+    )
+
+    # 3b. Spawna la Pallina Rossa
+    spawn_ball = Node(
+        package='ros_gz_sim', executable='create',
+        arguments=['-name', 'target_ball', 
+                   '-file', ball_file, 
+                   '-x', '-2.0', '-y', '0.0', '-z', '0.5'], # Posizione Goal Pallina
         output='screen'
     )
 
@@ -55,6 +72,7 @@ def generate_launch_description():
     return LaunchDescription([
         gazebo,
         robot_state_publisher,
-        spawn,
+        spawn_robot,
+        spawn_ball,
         bridge
     ])
