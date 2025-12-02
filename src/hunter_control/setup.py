@@ -25,7 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             # Sintassi: 'nome_comando = nome_cartella.nome_file:main'
-            'control_node = hunter_control.hunter_bt_node:main',
+            'control_node = hunter_control.behavior_tree_node:main',
         ],
     },
 )
