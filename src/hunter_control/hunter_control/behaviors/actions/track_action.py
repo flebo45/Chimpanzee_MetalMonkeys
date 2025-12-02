@@ -17,7 +17,13 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         self.publisher = self.node.create_publisher(Twist, '/cmd_vel', 10)
 
     def update(self):
+        # Controlla se il target è ancora visibile
+        if not hasattr(self.blackboard, "target_visible") or not self.blackboard.target_visible:
+            print("DEBUG TRACK: Target non più visibile, esco con FAILURE")
+            return py_trees.common.Status.FAILURE
+        
         if not hasattr(self.blackboard, "target_center_x"):
+            print("DEBUG TRACK: Dati target non disponibili")
             return py_trees.common.Status.FAILURE
 
         center_x = self.blackboard.target_center_x

@@ -53,8 +53,7 @@ class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
     def callback(self, msg):
         self.blackboard.target_visible = msg.data
         # DEBUG: Stampa brutale per vedere se i dati arrivano
-        if msg.data:
-            print(f"DEBUG VISION: VEDO PALLA! ({msg.data})")
+        print(f"DEBUG VISION: target_visible aggiornato -> {msg.data}")
 
     def update(self):
         return py_trees.common.Status.SUCCESS
