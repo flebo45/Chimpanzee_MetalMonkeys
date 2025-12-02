@@ -47,6 +47,9 @@ class VisionNode(Node):
         # Boolean output fo the state (True=Visible, False=Not Visible)
         self.pub_status = self.create_publisher(Bool, '/vision/is_visible', 10)
 
+        # Output Debug Visualization
+        self.pub_debug_image = self.create_publisher(Image, '/vision/debug_image', 10)
+
         # Sate variables
         self.last_detection_time = 0
         self.target_lost_threshold = 10.0  # seconds
@@ -130,6 +133,16 @@ class VisionNode(Node):
         # Publish messages
         self.pub_target.publish(target_msg)
         self.pub_status.publish(status_msg)
+
+        # Publish debug image
+        if self.pub_debug_image.get_subscription_count() > 0:
+            try:
+                debug_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding='bgr8')
+                debug_msg.header = msg.header # Preserve original header: timestamp, frame_id
+
+                self.pub_debug_image.publish(debug_msg)
+            except Exception as e:
+                self.get_logger().error(f"Failed to publish debug image: {e}")
 
         if self.show_debug:
             cv2.imshow("Vision Debug", cv_image)

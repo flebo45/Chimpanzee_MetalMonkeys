@@ -107,7 +107,7 @@
   <joint name="scan_joint" type="fixed">
     <parent link="base_link"/>
     <child link="scan_link"/>
-    <origin xyz="0.15 0 0.02" rpy="0 0 0"/>
+    <origin xyz="0.22 0 0.06" rpy="0 0 0"/>
   </joint>
 
   <gazebo reference="scan_link">
@@ -128,7 +128,7 @@
           </horizontal>
         </scan>
         <range>
-          <min>0.01</min>
+          <min>0.12</min>
           <max>5.0</max>
         </range>
       </ray>
