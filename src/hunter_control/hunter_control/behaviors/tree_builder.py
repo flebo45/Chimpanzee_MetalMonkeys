@@ -12,7 +12,7 @@ def create_tree():
     vis_status2bb = VisionStatusToBlackboard(name="VisStatus2BB")
     vis_pose2bb = VisionPoseToBlackboard(name="VisPose2BB")
 
-    # CORREZIONE QUI SOTTO:
+    # Parallel richiede la policy
     data_gathering = py_trees.composites.Parallel(
         name="Data Gathering",
         policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False)
@@ -20,7 +20,8 @@ def create_tree():
     data_gathering.add_children([lidar2bb, vis_status2bb, vis_pose2bb])
 
     # --- 2. PLAN & ACT (Logic Root) ---
-    root_logic = py_trees.composites.Selector(name="Logic Root")
+    # CORREZIONE QUI: Aggiunto memory=False
+    root_logic = py_trees.composites.Selector(name="Logic Root", memory=False)
 
     # Ramo A: Safety
     safety_seq = py_trees.composites.Sequence(name="Safety", memory=False)
@@ -38,7 +39,6 @@ def create_tree():
     root_logic.add_children([safety_seq, chase_seq, search_action])
 
     # --- 3. ROOT TOTALE ---
-    # CORREZIONE ANCHE QUI SOTTO:
     root = py_trees.composites.Parallel(
         name="Main Sequence", 
         policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False)
