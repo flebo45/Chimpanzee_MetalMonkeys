@@ -42,15 +42,21 @@ class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
     def __init__(self, name="VisStatus2BB", topic_name="/vision/is_visible"):
         super().__init__(name=name)
         self.topic_name = topic_name
-        self.blackboard = Blackboard()
+        # Usa Client invece di Blackboard() diretto
+        self.blackboard = py_trees.blackboard.Client(name=name)
+        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.WRITE)
         self.blackboard.target_visible = False
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
-        self.node.create_subscription(Bool, self.topic_name, self.callback, 10)
+        # Usa Best Effort per essere compatibile con tutto
+        qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
+        self.node.create_subscription(Bool, self.topic_name, self.callback, qos)
 
     def callback(self, msg):
         self.blackboard.target_visible = msg.data
+        if self.node:
+            self.node.get_logger().info(f"VisionStatusToBlackboard: Received {msg.data}", throttle_duration_sec=1.0)
 
     def update(self):
         return py_trees.common.Status.SUCCESS
@@ -59,8 +65,12 @@ class VisionPoseToBlackboard(py_trees.behaviour.Behaviour):
     def __init__(self, name="VisPose2BB", topic_name="/vision/target"):
         super().__init__(name=name)
         self.topic_name = topic_name
-        self.blackboard = Blackboard()
-        self.blackboard.target_center_x = 320.0 
+        # Usa Client
+        self.blackboard = py_trees.blackboard.Client(name=name)
+        self.blackboard.register_key(key="target_center_x", access=py_trees.common.Access.WRITE)
+        self.blackboard.register_key(key="target_area", access=py_trees.common.Access.WRITE)
+        
+        self.blackboard.target_center_x = 160.0 
         self.blackboard.target_area = 0.0
 
     def setup(self, **kwargs):
@@ -68,9 +78,8 @@ class VisionPoseToBlackboard(py_trees.behaviour.Behaviour):
         self.node.create_subscription(Point, self.topic_name, self.callback, 10)
 
     def callback(self, msg):
-        # Adattiamo i dati YOLO alla nostra logica
         self.blackboard.target_center_x = msg.x
-        self.blackboard.target_area = msg.z # Il collega usa Z per l'area
+        self.blackboard.target_area = msg.z 
 
     def update(self):
         return py_trees.common.Status.SUCCESS
