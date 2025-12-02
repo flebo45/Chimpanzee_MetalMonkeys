@@ -1,5 +1,4 @@
 import py_trees
-# Assicurati che l'import punti al file giusto dove hai messo le classi dati
 from hunter_control.behaviors.behaviors_data import LidarToBlackboard, VisionStatusToBlackboard, VisionPoseToBlackboard
 from hunter_control.behaviors.conditions.obstacle_conditions import IsObstacleClose
 from hunter_control.behaviors.conditions.target_condition import IsTargetVisible
@@ -8,34 +7,43 @@ from hunter_control.behaviors.actions.track_action import ActionTrack
 from hunter_control.behaviors.actions.search_action import ActionSearch
 
 def create_tree():
-    # --- 1. SENSE ---
-    lidar = LidarToBlackboard()
-    vis_status = VisionStatusToBlackboard()
-    vis_pose = VisionPoseToBlackboard()
+    # --- 1. SENSE (Data Gathering) ---
+    lidar2bb = LidarToBlackboard(name="Lidar2BB")
+    vis_status2bb = VisionStatusToBlackboard(name="VisStatus2BB")
+    vis_pose2bb = VisionPoseToBlackboard(name="VisPose2BB")
 
-    sense = py_trees.composites.Parallel(
-        name="Sense", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ALL
+    # CORREZIONE QUI SOTTO:
+    data_gathering = py_trees.composites.Parallel(
+        name="Data Gathering",
+        policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False)
     )
-    sense.add_children([lidar, vis_status, vis_pose])
+    data_gathering.add_children([lidar2bb, vis_status2bb, vis_pose2bb])
 
-    # --- 2. LOGIC ---
-    logic = py_trees.composites.Selector(name="Logic")
+    # --- 2. PLAN & ACT (Logic Root) ---
+    root_logic = py_trees.composites.Selector(name="Logic Root")
 
-    # Safety
-    safety = py_trees.composites.Sequence(name="Safety", memory=False)
-    safety.add_children([IsObstacleClose(), ActionStop()])
+    # Ramo A: Safety
+    safety_seq = py_trees.composites.Sequence(name="Safety", memory=False)
+    safety_seq.add_child(IsObstacleClose())
+    safety_seq.add_child(ActionStop())
 
-    # Chase
-    chase = py_trees.composites.Sequence(name="Chase", memory=False)
-    chase.add_children([IsTargetVisible(), ActionTrack()])
+    # Ramo B: Chase
+    chase_seq = py_trees.composites.Sequence(name="Chase", memory=False)
+    chase_seq.add_child(IsTargetVisible())
+    chase_seq.add_child(ActionTrack())
 
-    # Search
-    search = ActionSearch()
+    # Ramo C: Search
+    search_action = ActionSearch()
 
-    logic.add_children([safety, chase, search])
+    root_logic.add_children([safety_seq, chase_seq, search_action])
 
-    # --- ROOT ---
-    root = py_trees.composites.Parallel(name="Root", policy=py_trees.common.ParallelPolicy.SUCCESS_ON_ALL)
-    root.add_children([sense, logic])
-    
+    # --- 3. ROOT TOTALE ---
+    # CORREZIONE ANCHE QUI SOTTO:
+    root = py_trees.composites.Parallel(
+        name="Main Sequence", 
+        policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False)
+    )
+    root.add_child(data_gathering)
+    root.add_child(root_logic)
+
     return root
