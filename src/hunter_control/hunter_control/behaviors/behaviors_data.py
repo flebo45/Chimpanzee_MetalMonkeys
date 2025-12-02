@@ -16,12 +16,11 @@ class LidarToBlackboard(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
+        # Il LiDAR di Gazebo spesso richiede Best Effort, lo lasciamo così
         qos = QoSProfile(depth=10, reliability=ReliabilityPolicy.BEST_EFFORT)
         self.node.create_subscription(LaserScan, self.topic_name, self.callback, qos)
 
     def callback(self, msg):
-        # --- NOSTRO FILTRO ROBUSTO ---
-        # Vede i muri bassi e ignora errori di lettura
         num_rays = len(msg.ranges)
         mid = num_rays // 2
         window = 40
@@ -39,6 +38,7 @@ class LidarToBlackboard(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.SUCCESS
 
 class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
+    """ Legge /vision/is_visible (Bool) """
     def __init__(self, name="VisStatus2BB", topic_name="/vision/is_visible"):
         super().__init__(name=name)
         self.topic_name = topic_name
@@ -62,6 +62,7 @@ class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
         return py_trees.common.Status.SUCCESS
 
 class VisionPoseToBlackboard(py_trees.behaviour.Behaviour):
+    """ Legge /vision/target (Point) """
     def __init__(self, name="VisPose2BB", topic_name="/vision/target"):
         super().__init__(name=name)
         self.topic_name = topic_name
@@ -75,10 +76,12 @@ class VisionPoseToBlackboard(py_trees.behaviour.Behaviour):
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
+        # MODIFICA: Usiamo 10 (Reliable) anche qui
         self.node.create_subscription(Point, self.topic_name, self.callback, 10)
 
     def callback(self, msg):
         self.blackboard.target_center_x = msg.x
+        self.blackboard.target_area = msg.z 
         self.blackboard.target_area = msg.z 
 
     def update(self):
