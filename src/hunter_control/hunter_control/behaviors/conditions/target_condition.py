@@ -6,19 +6,13 @@ class IsTargetVisible(py_trees.behaviour.Behaviour):
     """
     def __init__(self, name="Target Visible?"):
         super().__init__(name=name)
-        # Usa Client
-        self.blackboard = py_trees.blackboard.Client(name=name)
-        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
+        self.blackboard = py_trees.blackboard.Blackboard()
 
     def update(self):
-        # Con Client, l'accesso è diretto
-        try:
-            visible = self.blackboard.target_visible
-        except KeyError:
-            print("IsTargetVisible: Key 'target_visible' not found on Blackboard")
+        if not hasattr(self.blackboard, "target_visible"):
             return py_trees.common.Status.FAILURE
 
-        if visible:
-            return py_trees.common.Status.SUCCESS 
+        if self.blackboard.target_visible:
+            return py_trees.common.Status.SUCCESS # VERO: vedo la palla
         
-        return py_trees.common.Status.FAILURE
+        return py_trees.common.Status.FAILURE # FALSO: non la vedo
