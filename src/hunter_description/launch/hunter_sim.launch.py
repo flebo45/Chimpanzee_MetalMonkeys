@@ -16,7 +16,7 @@ def generate_launch_description():
     robot_desc = doc.toxml()
 
     # 1b. Trova il file della PALLINA
-    ball_file = os.path.join(pkg_share, 'urdf', 'red_ball.sdf')
+    ball_file = os.path.join(pkg_share, 'urdf', 'rc_ball.sdf')
 
     # 1c. Definisci il file del mondo (Hexagon)
     world_file = os.path.join(pkg_share, 'worlds', 'hexagon_world.sdf')
@@ -41,9 +41,9 @@ def generate_launch_description():
     # 3b. Spawna la Pallina Rossa
     spawn_ball = Node(
         package='ros_gz_sim', executable='create',
-        arguments=['-name', 'target_ball', 
+        arguments=['-name', 'rc_ball', 
                    '-file', ball_file, 
-                   '-x', '-2.0', '-y', '0.0', '-z', '0.5'], # Posizione Goal Pallina
+                   '-x', '-2.0', '-y', '0.0', '-z', '0.2'], # Posizione Goal Pallina
         output='screen'
     )
 

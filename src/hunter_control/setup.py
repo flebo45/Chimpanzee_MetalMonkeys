@@ -24,6 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'behavior_tree_node = hunter_control.behavior_tree_node:main',
         ],
     },
 )

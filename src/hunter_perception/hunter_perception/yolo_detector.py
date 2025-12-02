@@ -44,7 +44,7 @@ class YoloDetector:
                 print(f"DEBUG: Detected class {name} with confidence {conf:.2f}")
                 
                 # Filter by target class and confidence
-                accepted_ids = [32, 29, 49, 0]
+                accepted_ids = [32, 29, 49, 0, 11]
 
                 if cls_id in accepted_ids:
                     x1, y1, x2, y2 = box.xyxy[0].cpu().numpy()
