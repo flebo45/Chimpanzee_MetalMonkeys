@@ -5,7 +5,12 @@ package_name = 'hunter_control'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=find_packages(exclude=['test']),
+    packages=[
+        package_name, 
+        package_name + '.behaviors',
+        package_name + '.behaviors.actions',
+        package_name + '.behaviors.conditions'
+    ],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
