@@ -39,9 +39,11 @@ def create_tree():
     root_logic.add_children([safety_seq, chase_seq, search_action])
 
     # --- 3. ROOT TOTALE ---
-    root = py_trees.composites.Parallel(
-        name="Main Sequence", 
-        policy=py_trees.common.ParallelPolicy.SuccessOnAll(synchronise=False)
+    # CORREZIONE: Uso Sequence invece di Parallel per garantire l'ordine di esecuzione
+    # Prima raccolgo i dati, POI li uso per decidere
+    root = py_trees.composites.Sequence(
+        name="Root Sequence", 
+        memory=False
     )
     root.add_child(data_gathering)
     root.add_child(root_logic)
