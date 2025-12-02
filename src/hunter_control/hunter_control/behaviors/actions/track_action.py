@@ -28,10 +28,10 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         # --- DOUBLE PID TUNED ---
         
         # 1. STERZO (Reattivo)
-        cmd.angular.z = 0.012 * (160 - center_x) # 160 è il centro (320/2 se usi VGA ridotta, o 320 se usi piena)
+        # cmd.angular.z = 0.012 * (160 - center_x) # 160 è il centro (320/2 se usi VGA ridotta, o 320 se usi piena)
         # NOTA: Se usi la config del collega 640x480, il centro è 320!
         # Correggiamo per 320 se usi la sua camera:
-        # cmd.angular.z = 0.006 * (320 - center_x) 
+        cmd.angular.z = 0.006 * (320 - center_x) 
         
         # 2. GAS (Fluido)
         error_area = 30000 - area
