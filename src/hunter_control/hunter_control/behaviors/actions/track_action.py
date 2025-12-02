@@ -8,11 +8,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
     """
     def __init__(self, name="Track Target"):
         super().__init__(name=name)
-        # Usa Client
-        self.blackboard = py_trees.blackboard.Client(name=name)
-        self.blackboard.register_key(key="target_center_x", access=py_trees.common.Access.READ)
-        self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
-        
+        self.blackboard = py_trees.blackboard.Blackboard()
         self.publisher = None
         self.node = None
 
@@ -21,22 +17,21 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         self.publisher = self.node.create_publisher(Twist, '/cmd_vel', 10)
 
     def update(self):
-        try:
-            center_x = self.blackboard.target_center_x
-            area = self.blackboard.target_area
-        except KeyError:
-            if self.node:
-                self.node.get_logger().warn("ActionTrack: Keys missing on blackboard")
+        if not hasattr(self.blackboard, "target_center_x"):
             return py_trees.common.Status.FAILURE
+
+        center_x = self.blackboard.target_center_x
+        area = self.blackboard.target_area
         
         cmd = Twist()
 
         # --- DOUBLE PID TUNED ---
         
         # 1. STERZO (Reattivo)
-        # Centro immagine = 160 (per 320x240)
-        err_x = 160 - center_x
-        cmd.angular.z = 0.012 * err_x 
+        cmd.angular.z = 0.012 * (160 - center_x) # 160 è il centro (320/2 se usi VGA ridotta, o 320 se usi piena)
+        # NOTA: Se usi la config del collega 640x480, il centro è 320!
+        # Correggiamo per 320 se usi la sua camera:
+        # cmd.angular.z = 0.006 * (320 - center_x) 
         
         # 2. GAS (Fluido)
         error_area = 30000 - area
@@ -53,7 +48,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         # LOG
         if self.node:
             self.node.get_logger().info(
-                f'TRACKING: cx={center_x:.1f} err_x={err_x:.1f} ang_z={cmd.angular.z:.2f}', 
+                f'TRACKING: ErrArea={error_area:.0f} | CmdLin={cmd.linear.x:.2f}', 
                 throttle_duration_sec=0.5
             )
             
