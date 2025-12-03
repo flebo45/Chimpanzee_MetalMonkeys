@@ -1,9 +1,7 @@
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import MultiThreadedExecutor
 import py_trees_ros
 from hunter_control.behaviors.tree_builder import create_tree
-import threading
 
 def main(args=None):
     rclpy.init(args=args)
@@ -19,17 +17,16 @@ def main(args=None):
         tree.setup(timeout=15)
         print("Behavior Tree Setup Complete!")
         
-        # CORREZIONE: Uso MultiThreadedExecutor in un thread separato
-        # per permettere ai callback di essere processati mentre il tree fa tick
-        executor = MultiThreadedExecutor(num_threads=4)
-        executor.add_node(tree.node)
+        # CORREZIONE: Creo un timer per tickare manualmente l'albero
+        # Questo permette a rclpy.spin di processare i callback
+        def tick_tree():
+            tree.tick()
         
-        # Esegui l'executor in un thread separato
-        executor_thread = threading.Thread(target=executor.spin, daemon=True)
-        executor_thread.start()
+        # Timer a 10Hz (100ms)
+        timer = tree.node.create_timer(0.1, tick_tree)
         
-        # Tick ogni 100ms (10Hz) nel thread principale
-        tree.tick_tock(period_ms=100.0)
+        # Ora spin processa sia i callback che il timer
+        rclpy.spin(tree.node)
         
     except KeyboardInterrupt:
         pass
