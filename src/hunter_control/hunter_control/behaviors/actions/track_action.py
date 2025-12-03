@@ -8,7 +8,10 @@ class ActionTrack(py_trees.behaviour.Behaviour):
     """
     def __init__(self, name="Track Target"):
         super().__init__(name=name)
-        self.blackboard = py_trees.blackboard.Blackboard()
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="target_center_x", access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
         self.publisher = None
         self.node = None
 
@@ -18,16 +21,21 @@ class ActionTrack(py_trees.behaviour.Behaviour):
 
     def update(self):
         # Controlla se il target è ancora visibile
-        if not hasattr(self.blackboard, "target_visible") or not self.blackboard.target_visible:
-            print("DEBUG TRACK: Target non più visibile, esco con FAILURE")
+        try:
+            visible = self.blackboard.target_visible
+            if not visible:
+                print("DEBUG TRACK: Target non più visibile, esco con FAILURE")
+                return py_trees.common.Status.FAILURE
+        except KeyError:
+            print("DEBUG TRACK: target_visible non disponibile")
             return py_trees.common.Status.FAILURE
         
-        if not hasattr(self.blackboard, "target_center_x"):
+        try:
+            center_x = self.blackboard.target_center_x
+            area = self.blackboard.target_area
+        except KeyError:
             print("DEBUG TRACK: Dati target non disponibili")
             return py_trees.common.Status.FAILURE
-
-        center_x = self.blackboard.target_center_x
-        area = self.blackboard.target_area
         
         cmd = Twist()
 

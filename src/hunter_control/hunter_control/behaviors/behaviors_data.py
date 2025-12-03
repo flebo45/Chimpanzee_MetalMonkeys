@@ -11,8 +11,8 @@ class LidarToBlackboard(py_trees.behaviour.Behaviour):
     def __init__(self, name="Lidar2BB", topic_name="/scan"):
         super().__init__(name=name)
         self.topic_name = topic_name
-        self.blackboard = Blackboard()
-        self.blackboard.obstacle_dist = 10.0
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="obstacle_dist", access=py_trees.common.Access.WRITE)
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -42,8 +42,8 @@ class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
     def __init__(self, name="VisStatus2BB", topic_name="/vision/is_visible"):
         super().__init__(name=name)
         self.topic_name = topic_name
-        self.blackboard = Blackboard()
-        self.blackboard.target_visible = False
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.WRITE)
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -53,7 +53,7 @@ class VisionStatusToBlackboard(py_trees.behaviour.Behaviour):
     def callback(self, msg):
         self.blackboard.target_visible = msg.data
         # DEBUG: Stampa brutale per vedere se i dati arrivano
-        print(f"DEBUG VISION: target_visible aggiornato -> {msg.data}")
+        print(f"DEBUG VISION: target_visible aggiornato -> {msg.data} [Blackboard ID: {id(self.blackboard)}]")
 
     def update(self):
         return py_trees.common.Status.SUCCESS
@@ -63,9 +63,9 @@ class VisionPoseToBlackboard(py_trees.behaviour.Behaviour):
     def __init__(self, name="VisPose2BB", topic_name="/vision/target"):
         super().__init__(name=name)
         self.topic_name = topic_name
-        self.blackboard = Blackboard()
-        self.blackboard.target_center_x = 320.0 
-        self.blackboard.target_area = 0.0
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="target_center_x", access=py_trees.common.Access.WRITE)
+        self.blackboard.register_key(key="target_area", access=py_trees.common.Access.WRITE)
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')

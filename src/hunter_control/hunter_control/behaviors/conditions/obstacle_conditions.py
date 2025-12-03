@@ -7,7 +7,10 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
     """
     def __init__(self, name="Safety Check"):
         super().__init__(name=name)
-        self.blackboard = py_trees.blackboard.Blackboard()
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="obstacle_dist", access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
+        self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
         self.node = None
         
         # PARAMETRI
@@ -18,15 +21,21 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         self.node = kwargs.get('node')
 
     def update(self):
-        # Protezione se i dati non sono ancora arrivati
-        if not hasattr(self.blackboard, "obstacle_dist"):
+        try:
+            dist = self.blackboard.obstacle_dist
+        except KeyError:
             return py_trees.common.Status.FAILURE
             
-        dist = self.blackboard.obstacle_dist
-        
         # Recuperiamo info visione con default sicuri
-        visible = getattr(self.blackboard, "target_visible", False)
-        area = getattr(self.blackboard, "target_area", 0.0)
+        try:
+            visible = self.blackboard.target_visible
+        except KeyError:
+            visible = False
+        
+        try:
+            area = self.blackboard.target_area
+        except KeyError:
+            area = 0.0
 
         # 1. SAFETY CHECK
         if dist < self.SAFETY_DIST:

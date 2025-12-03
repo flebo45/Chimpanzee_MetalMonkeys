@@ -6,19 +6,18 @@ class IsTargetVisible(py_trees.behaviour.Behaviour):
     """
     def __init__(self, name="Target Visible?"):
         super().__init__(name=name)
-        self.blackboard = py_trees.blackboard.Blackboard()
+        self.blackboard = self.attach_blackboard_client(name=self.name)
+        self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
 
     def update(self):
-        # Inizializza se non esiste ancora
-        if not hasattr(self.blackboard, "target_visible"):
-            self.blackboard.target_visible = False
-            print("DEBUG CONDITION: target_visible non ancora inizializzato, impostato a False")
+        try:
+            visible = self.blackboard.target_visible
+            print(f"DEBUG CONDITION: IsTargetVisible check -> {visible} [Blackboard ID: {id(self.blackboard)}]")
+            
+            if visible:
+                return py_trees.common.Status.SUCCESS # VERO: vedo la palla
+            else:
+                return py_trees.common.Status.FAILURE # FALSO: non la vedo
+        except KeyError:
+            print("DEBUG CONDITION: target_visible non ancora disponibile nella blackboard")
             return py_trees.common.Status.FAILURE
-
-        visible = self.blackboard.target_visible
-        print(f"DEBUG CONDITION: IsTargetVisible check -> {visible}")
-        
-        if visible:
-            return py_trees.common.Status.SUCCESS # VERO: vedo la palla
-        
-        return py_trees.common.Status.FAILURE # FALSO: non la vedo
