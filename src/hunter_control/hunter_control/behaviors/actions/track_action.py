@@ -15,6 +15,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         self.publisher = None
         self.node = None
         self.target_reached = False  # Stato persistente per evitare oscillazioni
+        self.smoothed_center_error = 0.0  # Filtro per ridurre jitter sulle correzioni angolari
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -27,10 +28,12 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             if not visible:
                 print("DEBUG TRACK: Target non più visibile, esco con FAILURE")
                 self.target_reached = False  # Reset stato
+                self.smoothed_center_error = 0.0
                 return py_trees.common.Status.FAILURE
         except KeyError:
             print("DEBUG TRACK: target_visible non disponibile")
             self.target_reached = False  # Reset stato
+            self.smoothed_center_error = 0.0
             return py_trees.common.Status.FAILURE
         
         try:
@@ -54,6 +57,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             if area < TARGET_AREA_EXIT or area > TARGET_AREA_MAX:
                 # Target troppo lontano o troppo vicino - ricomincia tracking
                 self.target_reached = False
+                self.smoothed_center_error = 0.0
                 if self.node:
                     self.node.get_logger().info(
                         f'Target fuori range, riprendo tracking (Area={area:.0f})',
@@ -77,6 +81,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         if TARGET_AREA_MIN < area < TARGET_AREA_MAX and abs(320 - center_x) < CENTER_TOLERANCE_ENTRY:
             # TARGET RAGGIUNTO! Entra nello stato fermo
             self.target_reached = True
+            self.smoothed_center_error = 0.0
             cmd = Twist()
             cmd.linear.x = 0.0
             cmd.angular.z = 0.0
@@ -93,8 +98,15 @@ class ActionTrack(py_trees.behaviour.Behaviour):
 
         # --- DOUBLE PID TUNED (con setpoint coerente) ---
         
-        # 1. STERZO (Reattivo)
-        cmd.angular.z = 0.006 * (320 - center_x) 
+        # 1. STERZO (Reattivo) con filtro sul jitter della bounding box
+        center_error = 320 - center_x
+        alpha = 0.3  # coefficiente del filtro esponenziale
+        self.smoothed_center_error = (1 - alpha) * self.smoothed_center_error + alpha * center_error
+
+        if abs(self.smoothed_center_error) < 5:
+            cmd.angular.z = 0.0
+        else:
+            cmd.angular.z = np.clip(0.004 * self.smoothed_center_error, -0.6, 0.6)
         
         # 2. GAS (Fluido) - Setpoint a 55000 (nel range medio)
         AREA_SETPOINT = 55000
@@ -106,6 +118,10 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             cmd.linear.x = 0.0
         else:
             cmd.linear.x = np.clip(raw_speed, -0.12, 0.25)  # Velocità max molto ridotta
+
+        # Se stiamo correggendo molto l'orientamento, riduci la velocità in avanti per evitare zig-zag
+        if abs(cmd.angular.z) > 0.3:
+            cmd.linear.x *= 0.5
 
         self.publisher.publish(cmd)
         
