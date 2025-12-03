@@ -12,11 +12,12 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
         self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
         self.node = None
-        self.last_target_area = 0.0  # Memorizza ultima area vista per evitare falsi positivi
-        
+        self.reference_area = 0.0  # Area ritenuta "pulita" senza ostacoli davanti
+
         # PARAMETRI
-        self.SAFETY_DIST = 1.2  # Aumentato da 0.70 per rilevare muretti anche prima del "target raggiunto"
-        self.EXPECTED_AREA = 4000  # Abbassato da 6000 per riconoscere palla anche con detection instabile 
+        self.HARD_STOP_DIST = 0.90   # Fermati sempre se qualcosa è più vicino di così (LiDAR decide)
+        self.CAUTIOUS_DIST = 1.20    # Zona in cui incrociamo camera + LiDAR
+        self.AREA_DROP_RATIO = 0.6   # Se l'area cala oltre questo rapporto, probabile ostacolo
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -38,59 +39,55 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         except KeyError:
             area = 0.0
 
-        # Memorizza area per isteresi
-        if visible and area > 0:
-            self.last_target_area = area
-        
-        # 1. SAFETY CHECK - Controlla SOLO ostacoli veri
-        if dist < self.SAFETY_DIST:
-            
-            # CONSISTENCY CHECK: Se siamo MOLTO vicini (LiDAR), l'area DEVE essere GRANDE
-            # Altrimenti c'è un ostacolo tra noi e la palla (es. muro basso)
-            # Soglia scalata con distanza: più vicini = area richiesta più grande
-            if dist < 0.7:
-                AREA_THRESHOLD = 30000  # Molto vicino: richiede area enorme
-            elif dist < 1.0:
-                AREA_THRESHOLD = 20000  # Vicino: richiede area grande
-            else:
-                AREA_THRESHOLD = 10000  # Medio-vicino: richiede area significativa
-            
-            # DISCERNIMENTO INTELLIGENTE:
-            if visible and area > AREA_THRESHOLD:
-                # Palla DAVVERO vicina (LiDAR E camera concordano) -> OK, è la palla!
-                if self.node:
-                    self.node.get_logger().debug(
-                        f'Safety: Palla DAVVERO vicina (Dist: {dist:.2f}m | Area: {area:.0f} > {AREA_THRESHOLD}) - OK',
-                        throttle_duration_sec=2.0
-                    )
-                return py_trees.common.Status.FAILURE
-            
-            elif not visible and self.last_target_area > AREA_THRESHOLD:
-                # Palla appena persa MA era grande -> tolleranza temporanea
-                if self.node:
-                    self.node.get_logger().debug(
-                        f'Safety: Palla appena persa ma era vicina (LastArea: {self.last_target_area:.0f}) - Tolleranza',
-                        throttle_duration_sec=2.0
-                    )
-                return py_trees.common.Status.FAILURE
-            
-            else:
-                # OSTACOLO! Casi:
-                # 1. Vedo palla piccola ma LiDAR vicino -> muro basso tra noi e palla
-                # 2. Non vedo palla -> ostacolo vero
-                # 3. Area troppo piccola per la distanza -> inconsistenza
-                self.last_target_area = 0.0  # Reset memoria
-                
-                if visible and area > 0:
-                    reason = f"Ostacolo tra robot e palla (Area={area:.0f} troppo piccola per dist={dist:.2f}m)"
-                else:
-                    reason = "Nessun target visibile"
-                
+        # 1. HARD STOP: LiDAR comanda in modo assoluto
+        if dist < self.HARD_STOP_DIST:
+            self.reference_area = 0.0  # la misura non è affidabile in presenza di ostacoli vicini
+            if self.node:
+                self.node.get_logger().warn(
+                    f'⚠️ OSTACOLO RILEVATO dal LiDAR a {dist:.2f}m - FERMANDOSI',
+                    throttle_duration_sec=1.0
+                )
+            return py_trees.common.Status.SUCCESS
+
+        # 2. Zona prudente: incrociamo LiDAR e camera
+        if dist < self.CAUTIOUS_DIST:
+            if not visible:
+                self.reference_area = 0.0
                 if self.node:
                     self.node.get_logger().warn(
-                        f'⚠️ OSTACOLO RILEVATO! {reason} - FERMANDOSI', 
+                        f'⚠️ OSTACOLO RILEVATO! Palla non visibile e LiDAR misura {dist:.2f}m',
                         throttle_duration_sec=1.0
                     )
-                return py_trees.common.Status.SUCCESS        
-        
+                return py_trees.common.Status.SUCCESS
+
+            # Se non abbiamo ancora un riferimento "pulito", salviamo l'area attuale e proseguiamo
+            if self.reference_area == 0.0:
+                self.reference_area = area
+                return py_trees.common.Status.FAILURE
+
+            # La palla appare più grande => aggiorniamo il riferimento (permette avvicinamento progressivo)
+            if area >= self.reference_area:
+                self.reference_area = area
+                return py_trees.common.Status.FAILURE
+
+            # Se il calo è lieve (rumore), aggiorniamo con una media e continuiamo
+            if area >= self.reference_area * self.AREA_DROP_RATIO:
+                self.reference_area = 0.7 * self.reference_area + 0.3 * area
+                return py_trees.common.Status.FAILURE
+
+            # Calo marcato -> ostacolo tra robot e palla
+            if self.node:
+                self.node.get_logger().warn(
+                    f'⚠️ OSTACOLO RILEVATO! Area calata da {self.reference_area:.0f} a {area:.0f} (dist={dist:.2f}m)',
+                    throttle_duration_sec=1.0
+                )
+            self.reference_area = 0.0
+            return py_trees.common.Status.SUCCESS
+
+        # 3. Nessun ostacolo: aggiorna riferimento se la palla è visibile
+        if visible and area > 0:
+            # memorizza un riferimento graduale per confrontare eventuali ostruzioni future
+            if area > self.reference_area:
+                self.reference_area = area
+
         return py_trees.common.Status.FAILURE
