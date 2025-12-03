@@ -52,7 +52,7 @@ class VisionNode(Node):
 
         # Sate variables
         self.last_detection_time = 0
-        self.target_lost_threshold = 0.5  # seconds (ridotto per evitare inseguimento di fantasmi)
+        self.target_lost_threshold = 1.0  # seconds - tolleranza per perdite temporanee vicino alla palla
         self.last_known_area = 0.0  # Mantiene l'ultima area conosciuta
 
         self.get_logger().info("Vision Node initialized.")

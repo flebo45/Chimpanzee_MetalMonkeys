@@ -12,10 +12,11 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         self.blackboard.register_key(key="target_visible", access=py_trees.common.Access.READ)
         self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
         self.node = None
+        self.last_target_area = 0.0  # Memorizza ultima area vista per evitare falsi positivi
         
         # PARAMETRI
         self.SAFETY_DIST = 0.70
-        self.EXPECTED_AREA = 6000 
+        self.EXPECTED_AREA = 4000  # Abbassato da 6000 per riconoscere palla anche con detection instabile 
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -37,22 +38,28 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         except KeyError:
             area = 0.0
 
+        # Memorizza area per isteresi
+        if visible and area > 0:
+            self.last_target_area = area
+        
         # 1. SAFETY CHECK - Controlla SOLO ostacoli veri
         if dist < self.SAFETY_DIST:
             
-            # DISCERNIMENTO: È la palla target o un ostacolo?
-            # Se vediamo la palla con area grande, NON è un ostacolo da evitare
-            if visible and area > self.EXPECTED_AREA:
-                # È LA PALLA TARGET! -> Non è un ostacolo, lascia che ActionTrack la raggiunga
+            # DISCERNIMENTO con ISTERESI: È la palla target o un ostacolo?
+            # Se vediamo la palla OPPURE l'abbiamo appena vista con area grande
+            if (visible and area > self.EXPECTED_AREA) or (not visible and self.last_target_area > self.EXPECTED_AREA):
+                # È LA PALLA TARGET (o l'abbiamo appena persa)! -> Non è un ostacolo
                 if self.node:
+                    status = "visibile" if visible else "appena persa"
                     self.node.get_logger().debug(
-                        f'Safety: Vicino al TARGET (Dist: {dist:.2f}m | Area: {area:.0f}) - Lasciando proseguire tracking',
+                        f'Safety: Vicino al TARGET ({status}) (Dist: {dist:.2f}m | Area: {area:.0f}/{self.last_target_area:.0f}) - Lasciando proseguire',
                         throttle_duration_sec=2.0
                     )
                 return py_trees.common.Status.FAILURE 
             
             else:
                 # È UN OSTACOLO VERO (muro, oggetto sconosciuto) -> Attiva lo stop
+                self.last_target_area = 0.0  # Reset memoria
                 reason = "Target Piccolo" if visible else "No Target"
                 if self.node:
                     self.node.get_logger().warn(
