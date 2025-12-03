@@ -15,7 +15,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         self.publisher = None
         self.node = None
         self.target_reached = False  # Stato persistente per evitare oscillazioni
-        self.smoothed_center_error = 0.0  # Filtro per ridurre jitter sulle correzioni angolari
+        self.smoothed_center_error = 0.0  # Filtro per attenuare il jitter del detector
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -100,13 +100,13 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         
         # 1. STERZO (Reattivo) con filtro sul jitter della bounding box
         center_error = 320 - center_x
-        alpha = 0.3  # coefficiente del filtro esponenziale
+        alpha = 0.15  # coefficiente del filtro esponenziale (più lento = meno jitter)
         self.smoothed_center_error = (1 - alpha) * self.smoothed_center_error + alpha * center_error
 
-        if abs(self.smoothed_center_error) < 5:
+        if abs(self.smoothed_center_error) < 8:
             cmd.angular.z = 0.0
         else:
-            cmd.angular.z = np.clip(0.004 * self.smoothed_center_error, -0.6, 0.6)
+            cmd.angular.z = np.clip(0.0025 * self.smoothed_center_error, -0.4, 0.4)
         
         # 2. GAS (Fluido) - Setpoint a 55000 (nel range medio)
         AREA_SETPOINT = 55000
@@ -117,11 +117,13 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         if abs(raw_speed) < 0.05:
             cmd.linear.x = 0.0
         else:
-            cmd.linear.x = np.clip(raw_speed, -0.12, 0.25)  # Velocità max molto ridotta
+            cmd.linear.x = np.clip(raw_speed, -0.12, 0.18)  # Velocità max ulteriormente ridotta
 
         # Se stiamo correggendo molto l'orientamento, riduci la velocità in avanti per evitare zig-zag
-        if abs(cmd.angular.z) > 0.3:
+        if abs(cmd.angular.z) > 0.25:
             cmd.linear.x *= 0.5
+        if abs(cmd.angular.z) > 0.35:
+            cmd.linear.x = np.sign(cmd.linear.x) * min(abs(cmd.linear.x), 0.05)
 
         self.publisher.publish(cmd)
         
