@@ -15,7 +15,7 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         self.last_target_area = 0.0  # Memorizza ultima area vista per evitare falsi positivi
         
         # PARAMETRI
-        self.SAFETY_DIST = 0.70
+        self.SAFETY_DIST = 1.2  # Aumentato da 0.70 per rilevare muretti anche prima del "target raggiunto"
         self.EXPECTED_AREA = 4000  # Abbassato da 6000 per riconoscere palla anche con detection instabile 
 
     def setup(self, **kwargs):
@@ -45,21 +45,27 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         # 1. SAFETY CHECK - Controlla SOLO ostacoli veri
         if dist < self.SAFETY_DIST:
             
-            # CONSISTENCY CHECK: Se siamo MOLTO vicini (LiDAR), l'area DEVE essere ENORME
+            # CONSISTENCY CHECK: Se siamo MOLTO vicini (LiDAR), l'area DEVE essere GRANDE
             # Altrimenti c'è un ostacolo tra noi e la palla (es. muro basso)
-            AREA_THRESHOLD_NEAR = 30000  # Area minima quando dist < 0.7m per essere "davvero vicini"
+            # Soglia scalata con distanza: più vicini = area richiesta più grande
+            if dist < 0.7:
+                AREA_THRESHOLD = 30000  # Molto vicino: richiede area enorme
+            elif dist < 1.0:
+                AREA_THRESHOLD = 20000  # Vicino: richiede area grande
+            else:
+                AREA_THRESHOLD = 10000  # Medio-vicino: richiede area significativa
             
             # DISCERNIMENTO INTELLIGENTE:
-            if visible and area > AREA_THRESHOLD_NEAR:
+            if visible and area > AREA_THRESHOLD:
                 # Palla DAVVERO vicina (LiDAR E camera concordano) -> OK, è la palla!
                 if self.node:
                     self.node.get_logger().debug(
-                        f'Safety: Palla DAVVERO vicina (Dist: {dist:.2f}m | Area: {area:.0f}) - OK',
+                        f'Safety: Palla DAVVERO vicina (Dist: {dist:.2f}m | Area: {area:.0f} > {AREA_THRESHOLD}) - OK',
                         throttle_duration_sec=2.0
                     )
                 return py_trees.common.Status.FAILURE
             
-            elif not visible and self.last_target_area > AREA_THRESHOLD_NEAR:
+            elif not visible and self.last_target_area > AREA_THRESHOLD:
                 # Palla appena persa MA era grande -> tolleranza temporanea
                 if self.node:
                     self.node.get_logger().debug(
