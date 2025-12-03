@@ -45,9 +45,9 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
         
         # PARAMETRI CON ISTERESI FORTE per evitare oscillazioni
-        TARGET_AREA_MIN = 45000   # Soglia per entrare in "raggiunto"
-        TARGET_AREA_EXIT = 35000  # Soglia per uscire (deve calare molto)
-        TARGET_AREA_MAX = 100000  # Troppo vicino
+        TARGET_AREA_MIN = 65000   # Soglia per entrare in "raggiunto" (più vicini alla palla)
+        TARGET_AREA_EXIT = 50000  # Soglia per uscire (isteresi)
+        TARGET_AREA_MAX = 115000  # Troppo vicino
         CENTER_TOLERANCE_ENTRY = 50  # Deve essere ben centrato per entrare
         CENTER_TOLERANCE_STAY = 100  # Più tolleranza per rimanere fermo
         
@@ -108,8 +108,8 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         else:
             cmd.angular.z = np.clip(0.0025 * self.smoothed_center_error, -0.4, 0.4)
         
-        # 2. GAS (Fluido) - Setpoint a 55000 (nel range medio)
-        AREA_SETPOINT = 55000
+        # 2. GAS (Fluido) - Setpoint più alto per avvicinarsi di più
+        AREA_SETPOINT = 65000
         error_area = AREA_SETPOINT - area
         raw_speed = 0.000008 * error_area  # Ulteriormente ridotto per controllo fine
         
