@@ -37,12 +37,14 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             print("DEBUG TRACK: Dati target non disponibili")
             return py_trees.common.Status.FAILURE
         
-        # CONDIZIONE TARGET RAGGIUNTO
-        # Area MOLTO grande (molto vicino) E ben centrato
-        TARGET_AREA_THRESHOLD = 80000  # Area minima per considerare "raggiunto" (~26% dello schermo 640x480)
-        CENTER_TOLERANCE = 60  # Tolleranza centratura (pixel)
+        # CONDIZIONE TARGET RAGGIUNTO con ISTERESI
+        # Area grande (vicino) E ben centrato
+        TARGET_AREA_MIN = 50000  # Soglia minima per "raggiunto" (~16% schermo)
+        TARGET_AREA_MAX = 120000  # Soglia massima (troppo vicino, ~39% schermo)
+        CENTER_TOLERANCE = 80  # Tolleranza centratura (pixel)
         
-        if area > TARGET_AREA_THRESHOLD and abs(320 - center_x) < CENTER_TOLERANCE:
+        # Controlla se target raggiunto (area nel range ottimale e centrato)
+        if TARGET_AREA_MIN < area < TARGET_AREA_MAX and abs(320 - center_x) < CENTER_TOLERANCE:
             # TARGET RAGGIUNTO! Ferma il robot
             cmd = Twist()
             cmd.linear.x = 0.0
@@ -58,20 +60,21 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         
         cmd = Twist()
 
-        # --- DOUBLE PID TUNED ---
+        # --- DOUBLE PID TUNED (con setpoint coerente) ---
         
         # 1. STERZO (Reattivo)
         cmd.angular.z = 0.006 * (320 - center_x) 
         
-        # 2. GAS (Fluido)
-        error_area = 30000 - area
-        raw_speed = 0.00002 * error_area
+        # 2. GAS (Fluido) - Setpoint a 60000 (metà del range target)
+        AREA_SETPOINT = 60000
+        error_area = AREA_SETPOINT - area
+        raw_speed = 0.00001 * error_area  # Ridotto da 0.00002 per più controllo
         
-        # Deadband
-        if abs(raw_speed) < 0.02:
+        # Deadband aumentato per stabilità
+        if abs(raw_speed) < 0.03:
             cmd.linear.x = 0.0
         else:
-            cmd.linear.x = np.clip(raw_speed, -0.2, 0.5)
+            cmd.linear.x = np.clip(raw_speed, -0.15, 0.3)  # Velocità max ridotta
 
         self.publisher.publish(cmd)
         

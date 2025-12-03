@@ -16,7 +16,7 @@ class VisionNode(Node):
 
         # ROS2 parameters
         self.declare_parameter('model_path', 'yolov8n.pt')
-        self.declare_parameter('conf_threshold', 0.35)  # Aumentato per ridurre falsi positivi
+        self.declare_parameter('conf_threshold', 0.25)  # Soglia detection
         self.declare_parameter('target_class_id', 32)  # Default to 'sports ball'
         self.declare_parameter('debug_window', True)
 
@@ -52,7 +52,7 @@ class VisionNode(Node):
 
         # Sate variables
         self.last_detection_time = 0
-        self.target_lost_threshold = 10.0  # seconds
+        self.target_lost_threshold = 0.5  # seconds (ridotto per evitare inseguimento di fantasmi)
         self.last_known_area = 0.0  # Mantiene l'ultima area conosciuta
 
         self.get_logger().info("Vision Node initialized.")
