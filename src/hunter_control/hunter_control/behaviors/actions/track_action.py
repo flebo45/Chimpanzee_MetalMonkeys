@@ -14,6 +14,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         self.blackboard.register_key(key="target_area", access=py_trees.common.Access.READ)
         self.publisher = None
         self.node = None
+        self.target_reached = False  # Stato persistente per evitare oscillazioni
 
     def setup(self, **kwargs):
         self.node = kwargs.get('node')
@@ -25,9 +26,11 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             visible = self.blackboard.target_visible
             if not visible:
                 print("DEBUG TRACK: Target non più visibile, esco con FAILURE")
+                self.target_reached = False  # Reset stato
                 return py_trees.common.Status.FAILURE
         except KeyError:
             print("DEBUG TRACK: target_visible non disponibile")
+            self.target_reached = False  # Reset stato
             return py_trees.common.Status.FAILURE
         
         try:
@@ -35,17 +38,45 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             area = self.blackboard.target_area
         except KeyError:
             print("DEBUG TRACK: Dati target non disponibili")
+            self.target_reached = False  # Reset stato
             return py_trees.common.Status.FAILURE
         
-        # CONDIZIONE TARGET RAGGIUNTO con ISTERESI
-        # Area grande (vicino) E ben centrato
-        TARGET_AREA_MIN = 50000  # Soglia minima per "raggiunto" (~16% schermo)
-        TARGET_AREA_MAX = 120000  # Soglia massima (troppo vicino, ~39% schermo)
-        CENTER_TOLERANCE = 80  # Tolleranza centratura (pixel)
+        # PARAMETRI CON ISTERESI FORTE per evitare oscillazioni
+        TARGET_AREA_MIN = 45000   # Soglia per entrare in "raggiunto"
+        TARGET_AREA_EXIT = 35000  # Soglia per uscire (deve calare molto)
+        TARGET_AREA_MAX = 100000  # Troppo vicino
+        CENTER_TOLERANCE_ENTRY = 50  # Deve essere ben centrato per entrare
+        CENTER_TOLERANCE_STAY = 100  # Più tolleranza per rimanere fermo
         
-        # Controlla se target raggiunto (area nel range ottimale e centrato)
-        if TARGET_AREA_MIN < area < TARGET_AREA_MAX and abs(320 - center_x) < CENTER_TOLERANCE:
-            # TARGET RAGGIUNTO! Ferma il robot
+        # Se già raggiunto, usa isteresi per rimanere fermo
+        if self.target_reached:
+            # Controlla se dobbiamo USCIRE dallo stato "raggiunto"
+            if area < TARGET_AREA_EXIT or area > TARGET_AREA_MAX:
+                # Target troppo lontano o troppo vicino - ricomincia tracking
+                self.target_reached = False
+                if self.node:
+                    self.node.get_logger().info(
+                        f'Target fuori range, riprendo tracking (Area={area:.0f})',
+                        throttle_duration_sec=1.0
+                    )
+            else:
+                # Rimani fermo
+                cmd = Twist()
+                cmd.linear.x = 0.0
+                cmd.angular.z = 0.0
+                self.publisher.publish(cmd)
+                
+                if self.node:
+                    self.node.get_logger().info(
+                        f'🎯 TARGET MANTENUTO! Area={area:.0f} | Center={center_x:.0f}',
+                        throttle_duration_sec=2.0
+                    )
+                return py_trees.common.Status.RUNNING  # Rimani in questo stato
+        
+        # Se NON ancora raggiunto, controlla se ENTRARE nello stato "raggiunto"
+        if TARGET_AREA_MIN < area < TARGET_AREA_MAX and abs(320 - center_x) < CENTER_TOLERANCE_ENTRY:
+            # TARGET RAGGIUNTO! Entra nello stato fermo
+            self.target_reached = True
             cmd = Twist()
             cmd.linear.x = 0.0
             cmd.angular.z = 0.0
@@ -56,7 +87,7 @@ class ActionTrack(py_trees.behaviour.Behaviour):
                     f'🎯 TARGET RAGGIUNTO! Area={area:.0f} | Center={center_x:.0f}',
                     throttle_duration_sec=1.0
                 )
-            return py_trees.common.Status.SUCCESS
+            return py_trees.common.Status.RUNNING  # Non SUCCESS, rimani in RUNNING
         
         cmd = Twist()
 
@@ -65,16 +96,16 @@ class ActionTrack(py_trees.behaviour.Behaviour):
         # 1. STERZO (Reattivo)
         cmd.angular.z = 0.006 * (320 - center_x) 
         
-        # 2. GAS (Fluido) - Setpoint a 60000 (metà del range target)
-        AREA_SETPOINT = 60000
+        # 2. GAS (Fluido) - Setpoint a 55000 (nel range medio)
+        AREA_SETPOINT = 55000
         error_area = AREA_SETPOINT - area
-        raw_speed = 0.00001 * error_area  # Ridotto da 0.00002 per più controllo
+        raw_speed = 0.000008 * error_area  # Ulteriormente ridotto per controllo fine
         
-        # Deadband aumentato per stabilità
-        if abs(raw_speed) < 0.03:
+        # Deadband aggressivo per stabilità
+        if abs(raw_speed) < 0.05:
             cmd.linear.x = 0.0
         else:
-            cmd.linear.x = np.clip(raw_speed, -0.15, 0.3)  # Velocità max ridotta
+            cmd.linear.x = np.clip(raw_speed, -0.12, 0.25)  # Velocità max molto ridotta
 
         self.publisher.publish(cmd)
         
