@@ -45,27 +45,46 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         # 1. SAFETY CHECK - Controlla SOLO ostacoli veri
         if dist < self.SAFETY_DIST:
             
-            # DISCERNIMENTO con ISTERESI: È la palla target o un ostacolo?
-            # Se vediamo la palla OPPURE l'abbiamo appena vista con area grande
-            if (visible and area > self.EXPECTED_AREA) or (not visible and self.last_target_area > self.EXPECTED_AREA):
-                # È LA PALLA TARGET (o l'abbiamo appena persa)! -> Non è un ostacolo
+            # CONSISTENCY CHECK: Se siamo MOLTO vicini (LiDAR), l'area DEVE essere ENORME
+            # Altrimenti c'è un ostacolo tra noi e la palla (es. muro basso)
+            AREA_THRESHOLD_NEAR = 30000  # Area minima quando dist < 0.7m per essere "davvero vicini"
+            
+            # DISCERNIMENTO INTELLIGENTE:
+            if visible and area > AREA_THRESHOLD_NEAR:
+                # Palla DAVVERO vicina (LiDAR E camera concordano) -> OK, è la palla!
                 if self.node:
-                    status = "visibile" if visible else "appena persa"
                     self.node.get_logger().debug(
-                        f'Safety: Vicino al TARGET ({status}) (Dist: {dist:.2f}m | Area: {area:.0f}/{self.last_target_area:.0f}) - Lasciando proseguire',
+                        f'Safety: Palla DAVVERO vicina (Dist: {dist:.2f}m | Area: {area:.0f}) - OK',
                         throttle_duration_sec=2.0
                     )
-                return py_trees.common.Status.FAILURE 
+                return py_trees.common.Status.FAILURE
+            
+            elif not visible and self.last_target_area > AREA_THRESHOLD_NEAR:
+                # Palla appena persa MA era grande -> tolleranza temporanea
+                if self.node:
+                    self.node.get_logger().debug(
+                        f'Safety: Palla appena persa ma era vicina (LastArea: {self.last_target_area:.0f}) - Tolleranza',
+                        throttle_duration_sec=2.0
+                    )
+                return py_trees.common.Status.FAILURE
             
             else:
-                # È UN OSTACOLO VERO (muro, oggetto sconosciuto) -> Attiva lo stop
+                # OSTACOLO! Casi:
+                # 1. Vedo palla piccola ma LiDAR vicino -> muro basso tra noi e palla
+                # 2. Non vedo palla -> ostacolo vero
+                # 3. Area troppo piccola per la distanza -> inconsistenza
                 self.last_target_area = 0.0  # Reset memoria
-                reason = "Target Piccolo" if visible else "No Target"
+                
+                if visible and area > 0:
+                    reason = f"Ostacolo tra robot e palla (Area={area:.0f} troppo piccola per dist={dist:.2f}m)"
+                else:
+                    reason = "Nessun target visibile"
+                
                 if self.node:
                     self.node.get_logger().warn(
-                        f'OSTACOLO RILEVATO! ({reason}) Dist: {dist:.2f}m - FERMANDOSI', 
+                        f'⚠️ OSTACOLO RILEVATO! {reason} - FERMANDOSI', 
                         throttle_duration_sec=1.0
                     )
-                return py_trees.common.Status.SUCCESS
+                return py_trees.common.Status.SUCCESS        
         
         return py_trees.common.Status.FAILURE
