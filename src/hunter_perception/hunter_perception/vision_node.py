@@ -16,7 +16,7 @@ class VisionNode(Node):
 
         # ROS2 parameters
         self.declare_parameter('model_path', 'yolov8n.pt')
-        self.declare_parameter('conf_threshold', 0.25)
+        self.declare_parameter('conf_threshold', 0.35)  # Aumentato per ridurre falsi positivi
         self.declare_parameter('target_class_id', 32)  # Default to 'sports ball'
         self.declare_parameter('debug_window', True)
 

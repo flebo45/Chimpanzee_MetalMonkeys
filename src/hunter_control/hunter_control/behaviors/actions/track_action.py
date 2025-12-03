@@ -38,9 +38,9 @@ class ActionTrack(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.FAILURE
         
         # CONDIZIONE TARGET RAGGIUNTO
-        # Area grande (abbastanza vicino) E ben centrato
-        TARGET_AREA_THRESHOLD = 20000  # Area minima per considerare "raggiunto"
-        CENTER_TOLERANCE = 50  # Tolleranza centratura (pixel)
+        # Area MOLTO grande (molto vicino) E ben centrato
+        TARGET_AREA_THRESHOLD = 80000  # Area minima per considerare "raggiunto" (~26% dello schermo 640x480)
+        CENTER_TOLERANCE = 60  # Tolleranza centratura (pixel)
         
         if area > TARGET_AREA_THRESHOLD and abs(320 - center_x) < CENTER_TOLERANCE:
             # TARGET RAGGIUNTO! Ferma il robot
