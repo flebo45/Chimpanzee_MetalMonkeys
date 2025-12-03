@@ -53,6 +53,7 @@ class VisionNode(Node):
         # Sate variables
         self.last_detection_time = 0
         self.target_lost_threshold = 10.0  # seconds
+        self.last_known_area = 0.0  # Mantiene l'ultima area conosciuta
 
         self.get_logger().info("Vision Node initialized.")
 
@@ -95,6 +96,9 @@ class VisionNode(Node):
             target_msg.x = float(cx)
             target_msg.y = float(cy)
             target_msg.z = area
+            
+            # Salva l'ultima area conosciuta
+            self.last_known_area = area
 
             status_msg.data = True
             self.last_detection_time = current_time
@@ -114,7 +118,7 @@ class VisionNode(Node):
                 # Use Kalman Filter prediction
                 target_msg.x = float(kf_pred_x)
                 target_msg.y = float(kf_pred_y)
-                target_msg.z = 0.0  # Area unknown
+                target_msg.z = self.last_known_area  # Usa l'ultima area conosciuta
                 status_msg.data = True
 
                 if self.show_debug:

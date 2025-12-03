@@ -37,25 +37,26 @@ class IsObstacleClose(py_trees.behaviour.Behaviour):
         except KeyError:
             area = 0.0
 
-        # 1. SAFETY CHECK
+        # 1. SAFETY CHECK - Controlla SOLO ostacoli veri
         if dist < self.SAFETY_DIST:
             
-            # DISCERNIMENTO: È la palla (amico) o un muro (nemico)?
+            # DISCERNIMENTO: È la palla target o un ostacolo?
+            # Se vediamo la palla con area grande, NON è un ostacolo da evitare
             if visible and area > self.EXPECTED_AREA:
-                # È LA PALLA! -> Non attivare lo stop (Ritorna FAILURE)
+                # È LA PALLA TARGET! -> Non è un ostacolo, lascia che ActionTrack la raggiunga
                 if self.node:
-                    self.node.get_logger().info(
-                        f'TARGET RAGGIUNTO! (Dist: {dist:.2f}m | Area: {area:.0f})', 
-                        throttle_duration_sec=1.0
+                    self.node.get_logger().debug(
+                        f'Safety: Vicino al TARGET (Dist: {dist:.2f}m | Area: {area:.0f}) - Lasciando proseguire tracking',
+                        throttle_duration_sec=2.0
                     )
                 return py_trees.common.Status.FAILURE 
             
             else:
-                # È UN OSTACOLO -> Attiva lo stop (Ritorna SUCCESS)
+                # È UN OSTACOLO VERO (muro, oggetto sconosciuto) -> Attiva lo stop
                 reason = "Target Piccolo" if visible else "No Target"
                 if self.node:
                     self.node.get_logger().warn(
-                        f'OSTACOLO! ({reason}) Dist: {dist:.2f}m', 
+                        f'OSTACOLO RILEVATO! ({reason}) Dist: {dist:.2f}m - FERMANDOSI', 
                         throttle_duration_sec=1.0
                     )
                 return py_trees.common.Status.SUCCESS
