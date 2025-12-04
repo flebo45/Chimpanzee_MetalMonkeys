@@ -83,80 +83,81 @@
       </link>
     </model>
 
-    <model name='center_pillar'>
+    <model name='center_wall'>
       <static>true</static>
       <pose>0 0 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'><geometry><box><size>0.2 3.0 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
-        <collision name='c'><geometry><box><size>0.2 3.0 0.5</size></box></geometry></collision>
+        <visual name='v'><geometry><box><size>0.2 2.0 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>0.2 2.0 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-<model name='low_wall_left'>
+    <model name='wall_left_top'>
       <static>true</static>
-      <pose>-2.5 0 0.1 0 0 0</pose> 
+      <pose>-2.0 1.5 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'>
-          <geometry>
-            <box><size>0.2 2.0 0.2</size></box>
-          </geometry>
-          <material><ambient>0 1 0 1</ambient><diffuse>0 1 0 1</diffuse></material>
-        </visual>
-        <collision name='c'>
-          <geometry>
-            <box><size>0.2 2.0 0.2</size></box>
-          </geometry>
-        </collision>
+        <visual name='v'><geometry><box><size>1.5 0.2 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>1.5 0.2 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='low_wall_right'>
+    <model name='wall_left_bottom'>
       <static>true</static>
-      <pose>2.5 0 0.1 0 0 0</pose> 
+      <pose>-2.0 -1.5 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'>
-          <geometry>
-             <box><size>0.2 2.0 0.2</size></box>
-          </geometry>
-          <material><ambient>0 1 0 1</ambient><diffuse>0 1 0 1</diffuse></material>
-        </visual>
-        <collision name='c'>
-          <geometry>
-             <box><size>0.2 2.0 0.2</size></box>
-          </geometry>
-        </collision>
+        <visual name='v'><geometry><box><size>1.5 0.2 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>1.5 0.2 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='bottom_obstacle'>
+    <model name='wall_right_top'>
       <static>true</static>
-      <pose>0 -3.0 0.1 0 0 0</pose> 
+      <pose>2.0 1.5 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'>
-          <geometry>
-             <box><size>3.5 0.2 0.2</size></box>
-          </geometry>
-          <material><ambient>0 1 0 1</ambient><diffuse>0 1 0 1</diffuse></material>
-        </visual>
-        <collision name='c'>
-          <geometry>
-             <box><size>3.5 0.2 0.2</size></box>
-          </geometry>
-        </collision>
+        <visual name='v'><geometry><box><size>1.5 0.2 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>1.5 0.2 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='top_obstacle'>
+    <model name='wall_right_bottom'>
       <static>true</static>
-      <pose>0 3.0 0.25 0 0 0</pose> <link name='link'>
-        <visual name='v'><geometry><box><size>3.5 0.2 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
-        <collision name='c'><geometry><box><size>3.5 0.2 0.5</size></box></geometry></collision>
+      <pose>2.0 -1.5 0.25 0 0 0</pose>
+      <link name='link'>
+        <visual name='v'><geometry><box><size>1.5 0.2 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>1.5 0.2 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='trap_left'>
+    <model name='pillar_tl'>
       <static>true</static>
-      <pose>-1.5 0.8 0.25 0 0 0</pose>
+      <pose>-1.0 3.0 0.25 0 0 0</pose>
+      <link name='link'>
+        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
+      </link>
+    </model>
+
+    <model name='pillar_tr'>
+      <static>true</static>
+      <pose>1.0 3.0 0.25 0 0 0</pose>
+      <link name='link'>
+        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
+      </link>
+    </model>
+
+    <model name='pillar_bl'>
+      <static>true</static>
+      <pose>-1.0 -3.0 0.25 0 0 0</pose>
+      <link name='link'>
+        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
+        <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
+      </link>
+    </model>
+
+    <model name='pillar_br'>
+      <static>true</static>
+      <pose>1.0 -3.0 0.25 0 0 0</pose>
       <link name='link'>
         <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>1 0.5 0 1</ambient><diffuse>1 0.5 0 1</diffuse></material></visual>
         <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
