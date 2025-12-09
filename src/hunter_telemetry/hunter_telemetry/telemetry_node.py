@@ -14,7 +14,7 @@ class TelemetryNode(Node):
         super().__init__('telemetry_node')
 
         self.sio = socketio.Client()
-        self.server_url = 'http://localhost:5000'
+        self.server_url = 'http://10.208.59.140:5000'
         self.connect_to_server()
 
         self.bridge = CvBridge()
@@ -32,6 +32,8 @@ class TelemetryNode(Node):
 
         # Internal State
         self.current_error = 0.0
+        self.current_area = 0.0
+        self.current_vel_x = 0.0
         self.current_vel_z = 0.0
         self.min_distance = 9.9
         self.is_visible = False
@@ -52,9 +54,11 @@ class TelemetryNode(Node):
     def target_callback(self, msg):
         # Compute visual error (Image center = 320 on 640x480 image)
         self.current_error = 320.0 - msg.x
+        self.current_area = msg.z
     
     def cmd_callback(self, msg):
         self.current_vel_z = msg.angular.z
+        self.current_vel_x = msg.linear.x
 
     def status_callback(self, msg):
         self.is_visible = msg.data
@@ -99,6 +103,8 @@ class TelemetryNode(Node):
         payload = {
             'error_x': self.current_error,
             'cmd_vel_z': self.current_vel_z,
+            'area': self.current_area,
+            'cmd_vel_x': self.current_vel_x,
             'distance': self.min_distance,
             'visible': self.is_visible
         }

@@ -8,8 +8,7 @@ submodules = 'hunter_control/behaviors'
 setup(
     name=package_name,
     version='0.0.0',
-    # Qui diciamo a setuptools di includere il pacchetto principale E i sottomoduli
-    packages=[package_name, submodules, submodules+'/actions', submodules+'/conditions'],
+    packages=[package_name, package_name + '.behaviors'],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -21,11 +20,10 @@ setup(
     maintainer_email='ubuntu@todo.todo',
     description='Hunter Control Package',
     license='TODO: License declaration',
-    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # Sintassi: 'nome_comando = nome_cartella.nome_file:main'
-            'control_node = hunter_control.behavior_tree_node:main',
+            'control_node = hunter_control.bt_main:main',
+            'ball_teleop = hunter_control.ball_teleop:main',
         ],
     },
 )

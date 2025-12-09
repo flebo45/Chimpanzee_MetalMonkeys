@@ -52,7 +52,7 @@ class VisionNode(Node):
 
         # Sate variables
         self.last_detection_time = 0
-        self.target_lost_threshold = 1.0  # seconds - tolleranza per perdite temporanee vicino alla palla
+        self.target_lost_threshold = 4.0  # seconds - tolleranza per perdite temporanee vicino alla palla
         self.last_known_area = 0.0  # Mantiene l'ultima area conosciuta
 
         self.get_logger().info("Vision Node initialized.")
@@ -95,7 +95,12 @@ class VisionNode(Node):
             # Prepare messages
             target_msg.x = float(cx)
             target_msg.y = float(cy)
-            target_msg.z = area
+
+            if ratio < 0.6 or ratio > 1.6:
+                target_msg.z = -1.0
+            ratio = w / h
+            else:
+                target_msg.z = area
             
             # Salva l'ultima area conosciuta
             self.last_known_area = area
