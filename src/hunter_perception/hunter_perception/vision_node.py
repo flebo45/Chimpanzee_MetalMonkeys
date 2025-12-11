@@ -95,10 +95,11 @@ class VisionNode(Node):
             # Prepare messages
             target_msg.x = float(cx)
             target_msg.y = float(cy)
-
+            
+            ratio = w / h
             if ratio < 0.6 or ratio > 1.6:
                 target_msg.z = -1.0
-            ratio = w / h
+            
             else:
                 target_msg.z = area
             
