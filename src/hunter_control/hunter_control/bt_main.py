@@ -123,7 +123,10 @@ def main(args=None):
     root = create_root(node)
     
     # ROS Wrapper for the tree
-    tree = py_trees_ros.trees.BehaviourTree(root)
+    tree = py_trees_ros.trees.BehaviourTree(
+        root=root,
+        unicode_tree_debug=True
+    )
     tree.setup(node=node)
 
     try:

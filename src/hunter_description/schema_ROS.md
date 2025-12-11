@@ -28,7 +28,7 @@ flowchart TB
         subgraph BrainGroup [ ]
             direction TB
             Vision[["vision_node"]]:::ros
-            Control[["behavior_tree_node"]]:::ros
+            Control[["control_node"]]:::ros
         end
 
         %% --- BLOCCO 3: TELEMETRIA (BASSO - IL "PAVIMENTO") ---
@@ -45,15 +45,14 @@ flowchart TB
         Gazebo <==> Bridge
 
         %% 2. FLUSSO VISIONE (ALTO)
-        Bridge ===>|/camera| Vision
-        Vision -->|/vision/target| Control
+        Bridge ===>|/camera/image_raw| Vision
+        Vision -->|/vision/target, /vision/is_visible| Control
 
         %% 3. FLUSSO CONTROLLO (CENTRO)
         Bridge -->|/scan| Control
         Control -->|/cmd_vel| Bridge
 
         %% 4. FLUSSO TELEMETRIA (BASSO)
-        %% Nota come tutte queste linee scendono senza tagliare il centro
         Bridge -->|/scan| Telem
         Vision -->|/vision/target| Telem
         Control -->|/cmd_vel| Telem
