@@ -1,0 +1,6 @@
+/vision_node:
+  ros__parameters:
+    model_path: "yolov8n.pt"
+    conf_threshold: 0.4
+    target_class_id: 32
+    debug_window: true
