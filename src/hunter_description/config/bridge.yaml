@@ -1,42 +1,50 @@
-# 1. Comandi di movimento (ROS -> Gazebo)
-- ros_topic_name: /cmd_vel
-  gz_topic_name: /cmd_vel
-  ros_type_name: geometry_msgs/msg/Twist
-  gz_type_name: gz.msgs.Twist
-  direction: ROS_TO_GZ
+# questo file serve come dizionario di traduzione tra i due mondi ROS 2 (il cervello del robot) e Gazebo (la simulazione fisica).
+# il nodo ros_gz_bridge definito in hunter_sim.launch.py , che funge da ponte, legge questo file .yaml per sapere esattamente quali canali (topic) deve ascoltare e come deve convertire i dati da un formato all'altro.
+# flusso di esempio: 
+# il nodo di controllo (ROS) calcola una velocità e pubblica un messaggio geometry_msgs/Twist sul topic ROS /cmd_vel.
+# il Bridge intercetta questo messaggio, guarda la direzione (ROS_TO_GZ) e capisce che deve passarlo a Gazebo.
+# il Bridge traduce il messaggio da geometry_msgs a gz.msgs e lo spedisce sul topic Gazebo /cmd_vel.
+# il Robot simulato riceve il comando e le ruote iniziano a girare.
+
+# 1. Comandi di movimento (ROS -> Gazebo). /cmd_vel è il comando motore, il bridge traduce la velocità per il motore fisico simulato in Gazebo.
+- ros_topic_name: /cmd_vel  # ROS ascolta/parla su questo canale 
+  gz_topic_name: /cmd_vel # Gazebo su questo
+  ros_type_name: geometry_msgs/msg/Twist  # in ROS il messaggio è fatto in questo modo
+  gz_type_name: gz.msgs.Twist # in Gazebo il messaggio deve essere tradotto in questo modo
+  direction: ROS_TO_GZ  # chi comanda e chi ascolta/esegue 
 
 # 2. Odometria (Gazebo -> ROS)
-- ros_topic_name: /odom
-  gz_topic_name: /odom
+- ros_topic_name: /odom  
+  gz_topic_name: /odom  # /odom è la propriocezione con cui Gazebo calcola dove si trova il robot fisicamente e lo dice a ROS.
   ros_type_name: nav_msgs/msg/Odometry
   gz_type_name: gz.msgs.Odometry
   direction: GZ_TO_ROS
 
 # 3. Telecamera (Gazebo -> ROS)
-- ros_topic_name: /camera/image_raw
-  gz_topic_name: /camera/image_raw
+- ros_topic_name: /camera/image_raw  
+  gz_topic_name: /camera/image_raw  # /camera/image_raw sono gli occhi con cui il robot vede. Gazebo renderizza la scena 3D e invia i pixel grezzi al vision_node.
   ros_type_name: sensor_msgs/msg/Image
   gz_type_name: gz.msgs.Image
   direction: GZ_TO_ROS
 
-# 4. LiDAR Laser Scan (Gazebo -> ROS) - FONDAMENTALE PER TE
-- ros_topic_name: /scan
-  gz_topic_name: /scan
+# 4. LiDAR Laser Scan (Gazebo -> ROS) 
+- ros_topic_name: /scan  
+  gz_topic_name: /scan  # Gazebo calcola le distanze dagli ostacoli con il sensore e le invia alla Blackboard.
   ros_type_name: sensor_msgs/msg/LaserScan
   gz_type_name: gz.msgs.LaserScan
   direction: GZ_TO_ROS
 
 # 5. Trasformazioni TF (Gazebo -> ROS)
 - ros_topic_name: /tf
-  gz_topic_name: /tf
+  gz_topic_name: /tf  # /tf è la posizione nello spazio delle parti del robot, per sapere le posizioni relative dei link del robot.
   ros_type_name: tf2_msgs/msg/TFMessage
   gz_type_name: gz.msgs.Pose_V
   direction: GZ_TO_ROS
 
-# 6. Stato dei Giunti/Ruote (Gazebo -> ROS) - FONDAMENTALE PER RVIZ
+# 6. Stato dei Giunti/Ruote (Gazebo -> ROS) 
 # Nota: il topic Gazebo qui è lungo perché Gazebo lo genera così di default
 - ros_topic_name: /joint_states
-  gz_topic_name: /world/empty/model/isr_bot/joint_state
+  gz_topic_name: /world/empty/model/isr_bot/joint_state  # Pubblica l'angolo di rotazione attuale delle ruote per disegnare il robot che si muove.
   ros_type_name: sensor_msgs/msg/JointState
   gz_type_name: gz.msgs.Model
   direction: GZ_TO_ROS

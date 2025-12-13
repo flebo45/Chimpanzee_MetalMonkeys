@@ -5,22 +5,24 @@
   <material name="white"><color rgba="1 1 1 1"/></material>
   <material name="black"><color rgba="0 0 0 1"/></material>
 
-  <link name="base_link">
-    <visual>
+  <link name="base_link">  <!-- punto principale del robot -->
+    <visual>  <!-- descrive come appare il robot, con la sua forma e il suo colore -->
       <geometry><box size="0.5 0.3 0.1"/></geometry>
       <material name="blue"/>
     </visual>
-    <collision>
+    <collision>   <!-- descrive la "hitbox" (il volume solido), impedendo al robot di attraversare il pavimento o i muri. qui è identica alla <visual> -->
       <geometry><box size="0.5 0.3 0.1"/></geometry>
     </collision>
-    <inertial>
-      <mass value="5.0"/>
-      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/>
+    <inertial>  <!-- descrive la massa e la sua distribuzione. senza, GZ non può calcolare come si muove il robot quando applichiamo forza alle ruote. -->
+      <mass value="5.0"/> <!--  mass: quanto pesa (5 kg) -->
+      <inertia ixx="0.04" ixy="0.0" ixz="0.0" iyy="0.1" iyz="0.0" izz="0.1"/> <!--  inertia: "Tensor d'inerzia". È una matrice che dice quanto è difficile far ruotare l'oggetto -->
     </inertial>
   </link>
 
-  <xacro:macro name="wheel" params="name y_offset">
-    <link name="${name}_wheel">
+  <xacro:macro name="wheel" params="name y_offset">  <!-- creiamo una Macro, è esattamente come una funzione in programmazione, un "template" chiamato wheel che accetta due parametri: -->
+  <!-- name: il prefisso del nome (es. "left" o "right"). -->
+  <!-- y_offset: la posizione lungo l'asse Y (quanto è distante dal centro del robot). -->
+    <link name="${name}_wheel">  <!-- (il blocco da 25 a 44) una volta viene fatto con name="left" e y_offset="0.175", e l'altra volta con name="right" e y_offset="-0.175", come stabilito dalle righe 47 e 48 -->
       <visual>
         <geometry><cylinder radius="0.1" length="0.05"/></geometry>
         <material name="white"/>
@@ -34,20 +36,20 @@
       </inertial>
     </link>
 
-    <joint name="${name}_wheel_joint" type="continuous">
+    <joint name="${name}_wheel_joint" type="continuous"> <!-- continuous: come una ruota, gira all'infinito senza blocchi. -->
       <parent link="base_link"/>
       <child link="${name}_wheel"/>
-      <origin xyz="-0.1 ${y_offset} 0" rpy="${pi/2} 0 0"/>
-      <axis xyz="0 0 -1"/>
+      <origin xyz="-0.1 ${y_offset} 0" rpy="${pi/2} 0 0"/> <!-- In ROS/Gazebo un cilindro viene creato "in piedi" (lungo l'asse Z), ma una ruota deve essere "sdraiata" per rotolare, quindi applichiamo una rotazione di 90 gradi (pi/2) sull'asse X (Roll) per "stenderla". -->                                                            
+      <axis xyz="0 0 -1"/> <!-- l'abbiamo stesa, ma l'asse attorno a cui ruota è ancora Z. Mettere -1 serve a invertire la logica di rotazione per allinearla con la realtà fisica: senza il meno con il comando Avanti la ruota gira all'indietro. -->
     </joint>
   </xacro:macro>
 
   <xacro:wheel name="left" y_offset="0.175"/>
   <xacro:wheel name="right" y_offset="-0.175"/>
 
-  <link name="caster_wheel">
+  <link name="caster_wheel">  <!-- nei robot a guida differenziale (2 ruote motrici), il robot non può stare in equilibrio da solo (cadrebbe in avanti o indietro), serve un terzo punto di appoggio che qui è una sfera  -->
     <visual>
-      <geometry><sphere radius="0.05"/></geometry>
+      <geometry><sphere radius="0.05"/></geometry> <!-- di raggio 5cm -->
       <material name="white"/>
     </visual>
     <collision>
@@ -55,14 +57,14 @@
     </collision>
     <inertial>
       <mass value="0.5"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/> <!-- valori 0.001 ovunque perchè è perfettamente simmetrica e la difficoltà nel farla ruotare è la stessa -->
     </inertial>
   </link>
 
-  <joint name="caster_joint" type="fixed">
+  <joint name="caster_joint" type="fixed"> <!-- qui incolliamo la sfera rigidamente al telaio (type="fixed"), e il robot "pattina" su quel punto d'appoggio ottenendo lo stesso risultato di una ruota che gira -->
     <parent link="base_link"/>
     <child link="caster_wheel"/>
-    <origin xyz="0.2 0 -0.05"/>
+    <origin xyz="0.2 0 -0.05"/>  <!-- metà sfera è incassata nel telaio e metà sporge sotto -->
   </joint>
 
   <link name="camera_link">
@@ -74,17 +76,17 @@
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="camera_link"/>
-    <origin xyz="0.25 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0.25 0 0.05" rpy="0 0 0"/> <!-- mettendo la camera a x=0.25 e z=0.05 la stiamo posizionando esattamente sul bordo anteriore superiore, come se fosse appoggiata sul "cofano" del robot -->
   </joint>
 
-  <gazebo reference="camera_link">
+  <gazebo reference="camera_link"> <!-- il blocco <gazebo> parla direttamente al motore di simulazione. 'reference' dice a Gazebo di applicare tutte le impostazioni nel blocco all'oggetto fisico chiamato camera_link -->
     <sensor name="camera" type="camera">
       <pose>0 0 0 0 0 0</pose>
       <visualize>true</visualize>
-      <update_rate>10</update_rate>
+      <update_rate>10</update_rate> <!-- fps -->
       <topic>camera/image_raw</topic>
       <camera>
-        <horizontal_fov>1.047</horizontal_fov>
+        <horizontal_fov>1.047</horizontal_fov> <!-- 1.047 in radianti è circa pi/3 che corrisponde a 60 gradi, è un angolo di visione standard -->
         <image>
           <width>640</width>
           <height>480</height>
@@ -95,23 +97,23 @@
 
   <link name="scan_link">
     <visual>
-      <geometry><cylinder radius="0.05" length="0.04"/></geometry>
+      <geometry><cylinder radius="0.05" length="0.04"/></geometry> <!-- il sensore viene rappresentato come un disco (o "hockey puck") di raggio 5cm, altezza 4cm -->
       <material name="black"/>
     </visual>
     <inertial>
-      <mass value="0.1"/>
-      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      <mass value="0.1"/> <!-- massa 0.1 (100 grammi) -->
+      <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/> <!-- il LiDAR è spesso montato in alto e aggiungere peso in cima al robot alza il baricentro e influenza (anche se di poco) la stabilità fisica, per una simulazione più accurata -->
     </inertial>
   </link>
 
   <joint name="scan_joint" type="fixed">
     <parent link="base_link"/>
     <child link="scan_link"/>
-    <origin xyz="0.22 0 0.06" rpy="0 0 0"/>
+    <origin xyz="0.22 0 0.06" rpy="0 0 0"/> <!-- il LiDAR galleggia 1cm sopra il tetto del robot (0.06 - 0.05 = 0.01), simulando i piedini di montaggio o distanziali che tengono il sensore sollevato -->
   </joint>
 
-  <gazebo reference="scan_link">
-    <sensor name="lidar" type="gpu_lidar">
+  <gazebo reference="scan_link"> <!-- il blocco <gazebo> parla direttamente al motore di simulazione. 'reference' dice a Gazebo di applicare tutte le impostazioni nel blocco all'oggetto fisico chiamato camera_link -->
+    <sensor name="lidar" type="gpu_lidar"> dice a Gazebo di usare la Scheda Video (GPU) per calcolare i rimbalzi del laser
       <pose>0 0 0 0 0 0</pose>
       <visualize>true</visualize>
       <update_rate>10</update_rate>
@@ -121,38 +123,38 @@
       <ray>
         <scan>
           <horizontal>
-            <samples>360</samples>
+            <samples>360</samples> <!-- significa che in un giro completo spara 360 raggi, quindi abbiamo una risoluzione di 1 grado per raggio (360° / 360), oppure spara un raggio laser ogni singolo grado. è un compromesso in quanto abbastanza fitto da vedere muri e persone e abbastanza leggero da usare -->
             <resolution>1</resolution>
             <min_angle>-3.14159</min_angle>
-            <max_angle>3.14159</max_angle>
+            <max_angle>3.14159</max_angle> <!-- da -3.14 (-pi) a +3.14 (+pi), in gradi significa da -180° a +180°. questo configura un LiDAR a 360 gradi -->
           </horizontal>
         </scan>
         <range>
-          <min>0.12</min>
-          <max>5.0</max>
+          <min>0.12</min> <!-- il sensore è "cieco" per i primi 12 cm, realistico poichè i sensori veri non riescono a leggere oggetti incollati alla lente -->
+          <max>5.0</max> <!-- il punto esatto dove il raggio laser "muore" o diventa troppo debole per tornare indietro -->
         </range>
       </ray>
     </sensor>
   </gazebo>
 
   <gazebo>
-    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+    <plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive"> <!-- questo è il plugin che implementa la cinematica della "guida differenziale" trasformando il comando di velocità in movimento reale -->
       <left_joint>left_wheel_joint</left_joint>
       <right_joint>right_wheel_joint</right_joint>
-      <wheel_separation>0.35</wheel_separation>
+      <wheel_separation>0.35</wheel_separation> <!-- 0.175 (sinistra) + 0.175 (destra) = 0.35. I conti tornano con quanto definito sopra -->
       <wheel_radius>0.1</wheel_radius>
-      <topic>cmd_vel</topic>
-      <odom_topic>odom</odom_topic>
-      <tf_topic>tf</tf_topic>
+      <topic>cmd_vel</topic> <!-- è l'input del plugin, come 'avanti di 1 m/s' (lingua parlata: geometry_msgs/Twist)  -->
+      <odom_topic>odom</odom_topic> <!-- calcola quanti giri al minuto devono fare la ruota destra e sinistra per ottenere quel movimento e genera l'output muovendo il robot e stimando la sua nuova posizione (odometria, ROS "disegna" il robot nella nuova posizione) -->
+      <tf_topic>tf</tf_topic> 
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
     </plugin>
     
-    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher"> <!-- questo plugin legge l'angolo di rotazione delle ruote in tempo reale e lo dice a ROS -->
     </plugin>
 
-    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
-      <render_engine>ogre2</render_engine>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors"> <!--senza gz-sim-sensors-system i sensori non partono, non catturano dati e non pubblicano nulla -->
+      <render_engine>ogre2</render_engine> render_engine: <!-- dice a Gazebo quale motore grafico usare per generare le immagini della camera (Ogre2 è lo standard moderno) -->
     </plugin>
   </gazebo>
 
