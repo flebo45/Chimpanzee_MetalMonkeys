@@ -1,3 +1,36 @@
+"""
+Hunter Perception - Vision Processing Node
+==========================================
+
+This module serves as the central orchestrator for the robot's perception system.
+It integrates Deep Learning object detection (YOLOv8) with probabilistic state estimation (Kalman Filter)
+to provide a robust target tracking stream to the control layer.
+
+System Data Flow:
+-----------------
+1.  Input: Raw RGB images from Gazebo/Real Camera (`/camera/image_raw`).
+2.  Processing:
+    -   Detection: Uses YOLOv8 to find the bounding box of the target.
+    -   Occlusion Check: Analyzes the Aspect Ratio to detect partial occlusions.
+    -   State Estimation: Uses a Kalman Filter to predict position during data dropouts.
+3.  Output:
+    -   Target Data (`/vision/target`): Encoded Point message (X, Y, Area/Status).
+    -   Visibility Status (`/vision/is_visible`): Boolean trigger for the Behavior Tree.
+    -   Debug Stream (`/vision/debug_image`): Annotated video feed.
+
+Communication Protocol (Custom Point Msg):
+------------------------------------------
+The `geometry_msgs/Point` message on `/vision/target` is overloaded as follows:
+-   x: Horizontal pixel coordinate (Center).
+-   y: Vertical pixel coordinate (Center).
+-   z: Status/Area Payload:
+    -   `z > 0`: Valid Detection (Value is Bounding Box Area).
+    -   `z = -1.0`: Occlusion Detected (Target visible but shape distorted).
+    -   `z ≈ 0`: Prediction Mode (Target lost, using Kalman estimate).
+
+Authors: [Metal Monkeys Team]
+Version: 1.0.0
+"""
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
@@ -7,17 +40,27 @@ from cv_bridge import CvBridge
 import cv2
 import time
 
+# Custom Modules
 from hunter_perception.yolo_detector import YoloDetector
 from hunter_perception.kalman_filter import KalmanFilter
 
 class VisionNode(Node):
+    """
+    ROS 2 Node for Visual Perception and State Estimation.
+    
+    Parameters:
+        model_path (str): Path to YOLO weights (default: yolov8n.pt).
+        conf_threshold (float): Minimum confidence for detection.
+        target_class_id (int): COCO class ID to track (32 = Sports Ball).
+        debug_window (bool): Enable/Disable local OpenCV window.
+    """
     def __init__(self):
         super().__init__('vision_node')
 
         # ROS2 parameters
         self.declare_parameter('model_path', 'yolov8n.pt')
-        self.declare_parameter('conf_threshold', 0.25)  # Soglia detection
-        self.declare_parameter('target_class_id', 32)  # Default to 'sports ball'
+        self.declare_parameter('conf_threshold', 0.25)  
+        self.declare_parameter('target_class_id', 32)  
         self.declare_parameter('debug_window', True)
 
         model_path = self.get_parameter('model_path').value
@@ -36,6 +79,7 @@ class VisionNode(Node):
             self.get_logger().error(f"Failed to load YOLO model: {e}")
             raise e
 
+        # Kalman Filter Initialization
         self.kf = KalmanFilter(dt=0.1) # 10 Hz update rate
 
         # ROS Communication
@@ -58,6 +102,19 @@ class VisionNode(Node):
         self.get_logger().info("Vision Node initialized.")
 
     def image_callback(self, msg):
+        """
+        Main Perception Loop (Callback).
+        Triggered for every new video frame.
+        
+        Pipeline:
+        1.  Convert ROS Image -> OpenCV.
+        2.  Inference (YOLO).
+        3.  State Prediction (Kalman).
+        4.  Data Fusion & Protocol Encoding.
+        5.  Publishing.
+        """
+
+        # Image Conversion
         try:
             # Convert ROS Image to OpenCV
             cv_image = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
@@ -67,21 +124,27 @@ class VisionNode(Node):
         
         current_time = self.get_clock().now().nanoseconds / 1e9
         
-        # Detcection (YOLO)
+        # Inference (YOLO)
         detection = self.detector.detect(cv_image)
 
         # Prediction (Kalman Filter)
         kf_pred_x, kf_pred_y = self.kf.predict()
 
+        # Message Preparation
         target_msg = Point()
         status_msg = Bool()
 
         #state_x, state_y, state_vx, state_vy = self.kf.x.flatten()
 
+        # Logic Branching
         if detection:
+            # CASE 1: DETECTION AVAILABLE
+
             #self.get_logger().info(f"Detection: Vel x:{state_vx:.2f}, Vel y: {state_vy:.2f} ")
             # Target from YOLO
             #cx, cy, w, h = detection
+
+            # Extract bounding box
             x1, y1, x2, y2 = detection
             cx = int((x1 + x2) / 2)
             cy = int((y1 + y2) / 2)
@@ -96,19 +159,24 @@ class VisionNode(Node):
             target_msg.x = float(cx)
             target_msg.y = float(cy)
             
+
+            # Occlusion Check via Aspect Ratio
             ratio = w / h
             if ratio < 0.6 or ratio > 1.6:
+                # Occlusion Detected
                 target_msg.z = -1.0
             
             else:
+                # Valid Detection
                 target_msg.z = area
             
-            # Salva l'ultima area conosciuta
+            # Store last known area
             self.last_known_area = area
 
             status_msg.data = True
             self.last_detection_time = current_time
 
+            # Visual Debugging
             if self.show_debug:
                 # Draw detection
                 cv2.rectangle(cv_image, (x1, y1), (x2, y2), (0,255,0), 2)
@@ -117,7 +185,7 @@ class VisionNode(Node):
                 cv2.putText(cv_image, f"YOLO: {area:.0f}", (x1, y1-10), 
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         else:
-            # No detection 
+            # CASE 2: NO DETECTION (PREDICTION MODE) 
             time_since_lost = current_time - self.last_detection_time
 
             if time_since_lost < self.target_lost_threshold:
@@ -159,6 +227,7 @@ class VisionNode(Node):
             cv2.waitKey(1)
 
 def main(args=None):
+    """Entry point for the Vision Node."""
     rclpy.init(args=args)
     node = VisionNode()
     try:

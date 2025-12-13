@@ -1,10 +1,47 @@
+"""
+Hunter Perception - Kalman Filter Module
+========================================
+
+This module implements a linear Discrete Kalman Filter (DKF) for 2D object tracking.
+It is designed to estimate the state of a dynamic target (Red Ball) based on noisy 
+visual measurements from YOLOv8.
+
+Mathematical Model:
+-------------------
+- **State Space**: The system is modeled using a Constant Velocity (CV) model.
+  State Vector x = [x_pos, y_pos, x_vel, y_vel]^T
+- **Process Model**: Assumes linear motion between frames. Deviations (acceleration/friction)
+  are modeled as Process Noise (Q).
+- **Measurement Model**: We observe only the position (pixels), not velocity.
+  Measurement Vector z = [x_pos, y_pos]^T
+
+Key Functions:
+--------------
+1.  **Filtering**: Smooths out jittery bounding box coordinates from YOLO.
+2.  **Prediction**: Provides state estimates when the target is temporarily occluded ("Ghost Tracking").
+
+Authors: [Metal Monkeys Team]
+Version: 1.0.0
+"""
 import numpy as np
 
 class KalmanFilter:
+    """
+    Linear Kalman Filter implementation for 2D tracking.
+    
+    Attributes:
+        dt (float): Time step between prediction cycles (seconds).
+        x (np.ndarray): State vector [x, y, vx, vy].
+        P (np.ndarray): Error covariance matrix (uncertainty of the estimate).
+        F (np.ndarray): State Transition Matrix (Physics model).
+        H (np.ndarray): Measurement Matrix (Mapping state to sensors).
+        Q (np.ndarray): Process Noise Covariance (Model uncertainty).
+        R (np.ndarray): Measurement Noise Covariance (Sensor noise).
+    """
     def __init__(self, dt: float = 0.1):
         """
-        Kalman Filter for 2d tracking (Constant Velocity Model)
-        State Vector: [x, y, vx, vy]
+        Initialize the Kalman Filter with given time step.
+
         Args:
             dt (float): Time step between measurements
         """
@@ -43,7 +80,18 @@ class KalmanFilter:
 
     def predict(self):
         """
-        Predict: Predict target on past velocity
+        Time Update Step (A Priori)
+        
+        Projects the current state and error covariance forward in time 
+        using the physics model (Matrix F). This step is performed 
+        even if no measurement is available (Blind Prediction).
+
+        Equations:
+            x_{k|k-1} = F * x_{k-1|k-1}
+            P_{k|k-1} = F * P_{k-1|k-1} * F^T + Q
+            
+        Returns:
+            tuple: Predicted (x, y) coordinates.
         """
 
         #Predict the state
@@ -55,10 +103,23 @@ class KalmanFilter:
     
     def update(self, z_meas):
         """
-        Correct: Correct the state with measurement
+        Measurement Update Step (A Posteriori)
+        
+        Corrects the predicted state using the actual measurement from YOLO.
+        Computes the Kalman Gain (K) to optimally fuse prediction and measurement.
+
         Args:
-            z_meas: Tuple (x, y) measurement
+            z_meas (tuple): The observed (x, y) pixel coordinates.
+            
+        Equations:
+            y = z - H * x_pred          (Innovation/Residual)
+            S = H * P * H^T + R         (Innovation Covariance)
+            K = P * H^T * S^-1          (Optimal Kalman Gain)
+            x_new = x_pred + K * y      (State Update)
+            P_new = (I - K * H) * P     (Covariance Update)
         """
+
+        # Convert measurement to column vector
         z = np.array([[z_meas[0]], [z_meas[1]]])
 
         #Error mesurement (y = z - Hx)
@@ -81,8 +142,9 @@ class KalmanFilter:
 
     def get_state(self):
         """
-        Get current state
+        Helper to retrieve the current position estimate as integers.
+        
         Returns:
-            Tuple (x, y) position
+            tuple(int, int): The estimated (x, y) pixel coordinates.
         """
         return int(self.x[0,0]), int(self.x[1,0])
