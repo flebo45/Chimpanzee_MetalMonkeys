@@ -1,29 +1,79 @@
+<!-- Hexagon lab environment definition for Gazebo simulation.
+
+Project Context: "Chimpanzee" - Autonomous Visual Target Tracking Robot.
+
+Environment Goal: Unlike standard open-field maps, this arena is engineered with specific geometric properties to stress-test the perception and navigation stack of the isr_bot.
+
+1. Perimeter Walls (Hexagon)
+
+    Technical Data: The perimeter is a regular hexagon with a side length of 5.0 meters.
+
+Engineering Justification:
+
+    Lidar Saturation: The 5.0m radius matches the robot's Lidar max range (5.0m), ensuring the robot is always localized within distinct geometric features to prevent "lost in space" scenarios.
+
+Target Containment: The enclosure ensures the visual target (Red Ball) remains strictly within the mission bounds while allowing enough room to reach its maximum velocity of 0.26 m/s.
+
+2. Central Barrier & Internal Walls (Verticality)
+
+    Technical Data: Walls feature a specific height of 0.5 meters.
+
+Engineering Justification:
+
+    Hard Occlusion: The robot's camera is mounted at a height of approximately 0.15m. Since the wall (0.5m) is significantly taller than the sensor, it guarantees "hard occlusion" where line-of-sight is mathematically impossible.
+
+Software Validation: This binary visibility state is required to trigger the specific transition in the Behavior Tree from "Visual Tracking" to the Extended Kalman Filter (EKF) prediction node.
+
+3. Central Barrier & Internal Walls (Orizzontality)
+
+    Technical Data: The central and the inner side walls are 0.5 meters long.
+
+Engineering Justification:
+
+    EKF Challenge: The 0.5m length is sufficient to fully occlude the target ball (0.2m diameter) when the robot is within 0.25m of the wall. This forces the EKF to handle short-term (sub-second) target loss scenarios rather than long-term disappearances.
+
+4. Obstacle Configuration (Pillars & Short Walls)
+
+    Technical Data: The layout creates narrow corridors and sharp corners using pillars and short walls.
+
+Engineering Justification:
+
+    YOLOv5 Stress Test: Pillars are placed to obscure only part of the target. This tests the neural network's ability to maintain a bounding box lock on clipped or non-square objects.
+
+Kinematic Constraints: The isr_bot chassis is 0.3m wide x 0.5m long. The gaps are designed to be narrow enough to require precise path planning (Potential Fields) rather than simple reactive reflexes.
+
+Recovery Behavior: Corner placements force the robot to utilize differential drive for in-place rotations (zero radius turns) to validate the "Spin & Search" recovery behavior. -->
+
 <?xml version="1.0" ?>
 <sdf version="1.8">
   <world name="hexagon_lab_xl">
-    
-    <physics name="1ms" type="ignored">
-      <max_step_size>0.001</max_step_size>
+    <!-- Configure a 1 ms physics step; execution handled by Gazebo physics plugin. -->
+    <physics name="1ms" type="ignored"> 
+      <max_step_size>0.001</max_step_size> 
       <real_time_factor>1.0</real_time_factor>
     </physics>
-    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin>
+    <!-- Core Gazebo systems: physics, user command handling, and scene broadcasting. -->
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"></plugin> 
     <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"></plugin>
     <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"></plugin>
 
+    <!-- Soft lighting settings for the virtual scene. -->
     <scene>
-      <ambient>0.6 0.6 0.6 1</ambient>
-      <background>0.8 0.8 0.8 1</background>
-      <shadows>false</shadows>
+      <ambient>0.6 0.6 0.6 1</ambient> <!-- Soft ambient light to reduce harsh shadows. -->
+      <background>0.8 0.8 0.8 1</background> <!-- Light gray background for better visibility. -->
+      <shadows>false</shadows> <!-- Disabling shadows for performance and visual clarity in this simple environment. -->
     </scene>
 
+    <!-- Directional light emulating sunlight without shadow casting. -->
     <light type="directional" name="sun">
-      <cast_shadows>false</cast_shadows>
-      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>false</cast_shadows> <!-- Disable shadows for performance -->
+      <pose>0 0 10 0 0 0</pose>  <!-- Positioned high above the scene -->
       <diffuse>0.6 0.6 0.6 1</diffuse>
       <specular>0.1 0.1 0.1 1</specular>
       <direction>0.5 0.5 -0.9</direction>
     </light>
 
+    <!-- Flat ground plane providing a large collision surface. -->
     <model name="ground_plane">
       <static>true</static>
       <link name="link">
@@ -35,7 +85,8 @@
       </link>
     </model>
 
-    <model name='hex_N'>
+    <!-- Hexagonal perimeter walls aligned to the six compass directions. -->
+    <model name='hex_N'> <!-- North Wall-->
       <static>true</static>
       <pose>0 4.33 0.25 0 0 0</pose>
       <link name='link'>
@@ -43,7 +94,7 @@
         <collision name='c'><geometry><box><size>5.0 0.15 0.5</size></box></geometry></collision>
       </link>
     </model>
-    <model name='hex_S'>
+    <model name='hex_S'> <!-- South Wall-->
       <static>true</static>
       <pose>0 -4.33 0.25 0 0 0</pose>
       <link name='link'>
@@ -51,7 +102,7 @@
         <collision name='c'><geometry><box><size>5.0 0.15 0.5</size></box></geometry></collision>
       </link>
     </model>
-    <model name='hex_NE'>
+    <model name='hex_NE'> <!-- Northeast Wall-->
       <static>true</static>
       <pose>3.75 2.16 0.25 0 0 -1.047</pose>
       <link name='link'>
@@ -59,7 +110,7 @@
         <collision name='c'><geometry><box><size>5.0 0.15 0.5</size></box></geometry></collision>
       </link>
     </model>
-    <model name='hex_NW'>
+    <model name='hex_NW'> <!-- Northwest Wall-->
       <static>true</static>
       <pose>-3.75 2.16 0.25 0 0 1.047</pose>
       <link name='link'>
@@ -67,7 +118,7 @@
         <collision name='c'><geometry><box><size>5.0 0.15 0.5</size></box></geometry></collision>
       </link>
     </model>
-    <model name='hex_SE'>
+    <model name='hex_SE'> <!-- Southeast Wall-->
       <static>true</static>
       <pose>3.75 -2.16 0.25 0 0 1.047</pose>
       <link name='link'>
@@ -75,7 +126,7 @@
         <collision name='c'><geometry><box><size>5.0 0.15 0.5</size></box></geometry></collision>
       </link>
     </model>
-    <model name='hex_SW'>
+    <model name='hex_SW'> <!-- Southwest Wall-->
       <static>true</static>
       <pose>-3.75 -2.16 0.25 0 0 -1.047</pose>
       <link name='link'>
@@ -84,25 +135,27 @@
       </link>
     </model>
 
+    <!-- Central divider limiting motion through the hexagon core. -->
     <model name='center_wall'>
       <static>true</static>
       <pose>0 0 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'><geometry><box><size>0.2 0.5 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
-        <collision name='c'><geometry><box><size>0.2 0.5 0.5</size></box></geometry></collision>
+        <visual name='v'><geometry><box><size>0.2 0.5 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual> 
+        <collision name='c'><geometry><box><size>0.2 0.5 0.5</size></box></geometry></collision> 
       </link>
     </model>
 
-    <model name='wall_left_top'>
+    <!-- Inner side walls positioned around the center corridor. Their lenght and width are designed to exploit particular occlusion scenarios (YOLO + EKF) -->
+    <model name='wall_left_top'> <!-- Left Top Wall -->
       <static>true</static>
       <pose>-2.0 1.5 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'><geometry><box><size>0.5 0.2 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+        <visual name='v'><geometry><box><size>0.5 0.2 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual> 
         <collision name='c'><geometry><box><size>0.5 0.2 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='wall_left_bottom'>
+    <model name='wall_left_bottom'>  <!-- Left Bottom Wall -->
       <static>true</static>
       <pose>-2.0 -1.5 0.25 0 0 0</pose>
       <link name='link'>
@@ -111,7 +164,7 @@
       </link>
     </model>
 
-    <model name='wall_right_top'>
+    <model name='wall_right_top'> <!-- Right Top Wall -->
       <static>true</static>
       <pose>2.0 1.5 0.25 0 0 0</pose>
       <link name='link'>
@@ -120,7 +173,7 @@
       </link>
     </model>
 
-    <model name='wall_right_bottom'>
+    <model name='wall_right_bottom'> <!-- Right Bottom Wall -->
       <static>true</static>
       <pose>2.0 -1.5 0.25 0 0 0</pose>
       <link name='link'>
@@ -129,25 +182,26 @@
       </link>
     </model>
 
-    <model name='pillar_tl'>
+    <!-- Pillars: their width and height are designed to partially occlude the target ball, creating particular YOLO occlusion scenarios. -->
+    <model name='pillar_tl'> <!-- Top Left Pillar -->
       <static>true</static>
       <pose>-1.0 3.0 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual> 
         <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='pillar_tr'>
+    <model name='pillar_tr'> <!-- Top Right Pillar -->
       <static>true</static>
       <pose>1.0 3.0 0.25 0 0 0</pose>
       <link name='link'>
-        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual>
+        <visual name='v'><geometry><box><size>0.3 0.3 0.5</size></box></geometry><material><ambient>0.1 0.1 0.1 1</ambient><diffuse>0.1 0.1 0.1 1</diffuse></material></visual> 
         <collision name='c'><geometry><box><size>0.3 0.3 0.5</size></box></geometry></collision>
       </link>
     </model>
 
-    <model name='pillar_bl'>
+    <model name='pillar_bl'> <!-- Bottom Left Pillar -->
       <static>true</static>
       <pose>-1.0 -3.0 0.25 0 0 0</pose>
       <link name='link'>
@@ -156,7 +210,7 @@
       </link>
     </model>
 
-    <model name='pillar_br'>
+    <model name='pillar_br'> <!-- Bottom Right Pillar -->
       <static>true</static>
       <pose>1.0 -3.0 0.25 0 0 0</pose>
       <link name='link'>
