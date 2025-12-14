@@ -1,3 +1,4 @@
+<?xml version="1.0" ?>
 <!-- Hexagon lab environment definition for Gazebo simulation.
 
 Project Context: "Chimpanzee" - Autonomous Visual Target Tracking Robot.
@@ -44,7 +45,6 @@ Kinematic Constraints: The isr_bot chassis is 0.3m wide x 0.5m long. The gaps ar
 
 Recovery Behavior: Corner placements force the robot to utilize differential drive for in-place rotations (zero radius turns) to validate the "Spin & Search" recovery behavior. -->
 
-<?xml version="1.0" ?>
 <sdf version="1.8">
   <world name="hexagon_lab_xl">
     <!-- Configure a 1 ms physics step; execution handled by Gazebo physics plugin. -->
