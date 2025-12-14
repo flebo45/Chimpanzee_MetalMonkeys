@@ -94,7 +94,7 @@ def create_root(node):
     # 3. GHOST TRACKING (Kalman Prediction)
     ghost_track_seq = py_trees.composites.Sequence(name="Ghost_Tracking", memory=False)
     ghost_track_seq.add_children([
-        IsTargetPredicted(name="Prediction_Active?", activation_delay=0.5),
+        IsTargetPredicted(name="Prediction_Active?", node=node, activation_delay=0.5),
         TrackGhost(name="Follow_Ghost", node=node)
     ])
 

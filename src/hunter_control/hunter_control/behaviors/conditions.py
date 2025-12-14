@@ -99,10 +99,11 @@ class IsTargetPredicted(py_trees.behaviour.Behaviour):
         activation_delay (float): Time in seconds the prediction must be active
                                   before returning SUCCESS.
     """
-    def __init__(self, name, activation_delay=0.5):
+    def __init__(self, name, node,activation_delay=0.5):
         super(IsTargetPredicted, self).__init__(name)
         self.blackboard = py_trees.blackboard.Blackboard()
 
+        self.node = node
         self.activation_delay = activation_delay
         self.first_prediction_time = None
 
