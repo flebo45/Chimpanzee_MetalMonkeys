@@ -49,7 +49,7 @@ class TelemetryNode(Node):
 
         # WebSocket Client Setup
         self.sio = socketio.Client()
-        self.server_url = 'http://192.168.1.60:5000'
+        self.server_url = 'http://localhost:5000'
         self.connect_to_server()
 
         # CV Bridge for Image Conversion
