@@ -8,7 +8,7 @@ submodules = 'hunter_control/behaviors'
 setup(
     name=package_name,
     version='0.0.0',
-    packages=[package_name, package_name + '.behaviors', package_name + '.analysis'],
+    packages=[package_name, package_name + '.behaviors', package_name + '.analysis', package_name + '.simulations'],
     data_files=[
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
@@ -25,6 +25,7 @@ setup(
             'control_node = hunter_control.bt_main:main',
             'ball_teleop = hunter_control.ball_teleop:main',
             'metrics_logger = hunter_control.analysis.metrics_logger:main',
+            'battery_node = hunter_control.simulations.battery_node:main',
         ],
     },
 )

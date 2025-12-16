@@ -25,7 +25,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, Point
 from std_msgs.msg import Bool
-from sensor_msgs.msg import LaserScan, Image
+from sensor_msgs.msg import LaserScan, Image, BatteryState
 from cv_bridge import CvBridge
 import cv2
 import base64
@@ -65,6 +65,8 @@ class TelemetryNode(Node):
         self.create_subscription(LaserScan, '/scan', self.scan_callback, 10)
         # Video Data
         self.create_subscription(Image, '/vision/debug_image', self.image_callback, 10)
+        # Battery Data
+        self.create_subscription(BatteryState, '/battery/status', self.battery_callback, 10)
 
         # Internal State
         self.current_error = 0.0
@@ -73,6 +75,7 @@ class TelemetryNode(Node):
         self.current_vel_z = 0.0
         self.min_distance = 9.9
         self.is_visible = False
+        self.battery_level = 100.0
 
         # Timer for periodic telemetry updates
         self.create_timer(0.1, self.send_telemetry)
@@ -161,6 +164,15 @@ class TelemetryNode(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error processing image: {e}")
+
+    def battery_callback(self, msg):
+        """
+        Callback for receiving battery status.
+        
+        Args:
+            msg (BatteryState): Message containing battery percentage.
+        """
+        self.battery_level = msg.percentage * 100.0
     
     def send_telemetry(self):
         """
@@ -178,7 +190,8 @@ class TelemetryNode(Node):
             'area': self.current_area,          # Target Area (Distance Proxy)
             'cmd_vel_x': self.current_vel_x,    # Linear Velocity Command
             'distance': self.min_distance,      # Minimum Lidar Distance
-            'visible': self.is_visible          # Target Visibility Status
+            'visible': self.is_visible,          # Target Visibility Status
+            'battery_level': self.battery_level  # Battery Level Percentage
         }
 
         self.sio.emit('robot_telemetry', payload)

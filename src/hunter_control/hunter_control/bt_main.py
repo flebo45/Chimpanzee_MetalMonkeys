@@ -38,7 +38,7 @@ import time
 from hunter_control.behaviors.topicsToBB import ToBlackboard
 
 # Condition Nodes
-from hunter_control.behaviors.conditions import IsObstacleClose, IsTargetReal, IsTargetPredicted, WasTargetClose
+from hunter_control.behaviors.conditions import IsObstacleClose, IsTargetReal, IsTargetPredicted, WasTargetClose, IsBatteryLow
 
 
 # Action Nodes
@@ -62,6 +62,12 @@ def create_root(node):
     root = py_trees.composites.Sequence(name="Hunter_Brain", memory=False)
     # Data Layer
     topics2bb = ToBlackboard(name="Update_BB", node=node)
+
+    # 0. BATTERY CHECK
+    battery_seq = py_trees.composites.Sequence(name="Battery_Check", memory=False)
+    battery_check = IsBatteryLow(name="Battery_Low?", low_threshold=20.0)
+    battery_action = EmergencyStop(name="Emergency_Stop", node=node)
+    battery_seq.add_children([battery_check, battery_action])
     
     # --- LOGIC LAYER: PRIORITY SELECTION ---
     priorities = py_trees.composites.Selector(name="Priorities", memory=False)
@@ -102,8 +108,11 @@ def create_root(node):
     search_action = SpinSearch(name="Search_Spin", node=node)
 
     # --- FINAL ASSEMBLY ---
+    brain_selector = py_trees.composites.Selector(name="Brain_Selector", memory=False)
+    
     priorities.add_children([safety_seq, real_track_seq, recovery_seq, ghost_track_seq, search_action])
-    root.add_children([topics2bb, priorities])
+    brain_selector.add_children([battery_seq, priorities])
+    root.add_children([topics2bb, brain_selector])
     
     return root
 

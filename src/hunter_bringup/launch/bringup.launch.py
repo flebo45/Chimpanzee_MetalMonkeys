@@ -46,9 +46,18 @@ def generate_launch_description():
         output='screen'
     )
 
+    #5. Battery Simulation (The Power Source)
+    battery_node = Node(
+        package='hunter_control',
+        executable='battery_node',
+        name='battery_node',
+        output='screen'
+    )
+
     return LaunchDescription([
         sim_launch,
         perception_node,
         control_node,
-        telemetry_node
+        telemetry_node,
+        battery_node
     ])

@@ -70,10 +70,19 @@ class SpinSearch(ActionNode):
         super(SpinSearch, self).__init__(name, node)
         self.start_time = None
         self.warmup_duration = 2.0 # Seconds to wait for vision system
+        self.spin_speed = 0.0    # Rotation speed (rad/s)
 
     def initialise(self):
         # Timer reset at the start of the search
         self.start_time = self.node.get_clock().now().nanoseconds / 1e9
+
+        direction = 1  # Default to left
+        if self.blackboard.exists("search_direction_hint"):
+            direction = self.blackboard.get("search_direction_hint")
+
+        self.spin_speed = 0.3 * direction
+        # side_str = "left" if direction == 1 else "right"
+        # self.node.get_logger().info(f"[SEARCH] Spinning {side_str} at {self.spin_speed:.2f} rad/s")
 
     def update(self):
         now = self.node.get_clock().now().nanoseconds / 1e9
@@ -90,7 +99,7 @@ class SpinSearch(ActionNode):
         # PHASE 2: ACTIVE SEARCH
         else:
             # Rotate slowly to avoid blurring the camera
-            msg.angular.z = 0.3 
+            msg.angular.z = self.spin_speed
             
         self.publisher.publish(msg)
         return py_trees.common.Status.RUNNING

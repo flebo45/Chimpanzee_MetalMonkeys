@@ -20,11 +20,12 @@ Authors: [Metal Monkeys Team]
 Version: 1.0.0
 """
 import py_trees
-from sensor_msgs.msg import LaserScan
+from sensor_msgs.msg import LaserScan, BatteryState
 from geometry_msgs.msg import Point
 from std_msgs.msg import Bool
 import rclpy
 from rclpy.qos import qos_profile_sensor_data
+import numpy as np
 
 class ToBlackboard(py_trees.behaviour.Behaviour):
     """
@@ -59,6 +60,8 @@ class ToBlackboard(py_trees.behaviour.Behaviour):
         self.blackboard.set("is_prediction", False)
         self.blackboard.set("last_valid_area", 0.0)
         self.blackboard.set("is_occluded", False)
+        self.blackboard.set("search_direction_hint", 1)  # 1: left, -1: right
+        self.blackboard.set("battery_level", 100.0)  # Percentage
         # ------------------------------------------
 
         # --- SUBSCRIBERS CONFIGURATION ---
@@ -71,6 +74,9 @@ class ToBlackboard(py_trees.behaviour.Behaviour):
         # Vision Target Subscriber
         self.sub_target = self.node.create_subscription(
             Point, '/vision/target', self.target_cb, qos_profile_sensor_data)
+
+        self.sub_battery = self.node.create_subscription(
+            BatteryState, '/battery/status', self.battery_cb, qos_profile_sensor_data)
 
     def update(self):
         """
@@ -121,6 +127,13 @@ class ToBlackboard(py_trees.behaviour.Behaviour):
         self.blackboard.set("target_error_x", err_x)
         self.blackboard.set("target_area", msg.z)
 
+        if msg.z != 0.0:
+            if abs(err_x) > 1.0:
+                # Update search direction hint based on error sign
+                direction = np.sign(err_x)
+                if direction != 0:
+                    self.blackboard.set("search_direction_hint", float(direction))
+
         if msg.z == 0.0 or (0.0 < msg.z < 0.1):
             # Case: Prediction
             self.blackboard.set("is_prediction", True)
@@ -134,3 +147,9 @@ class ToBlackboard(py_trees.behaviour.Behaviour):
             self.blackboard.set("is_prediction", False)
             self.blackboard.set("is_occluded", False)
             self.blackboard.set("last_valid_area", msg.z)
+
+    def battery_cb(self, msg):
+        """
+        Callback for Battery status messages.
+        """
+        self.blackboard.set("battery_level", msg.percentage * 100.0)  # Convert to percentage

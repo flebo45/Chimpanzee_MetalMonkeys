@@ -161,3 +161,28 @@ class WasTargetClose(py_trees.behaviour.Behaviour):
             return py_trees.common.Status.SUCCESS
             
         return py_trees.common.Status.FAILURE
+
+class IsBatteryLow(py_trees.behaviour.Behaviour):
+    """
+    Condition: Checks if the battery level is below a critical threshold.
+
+    Args:
+        name (str): Name of the behavior.
+        low_threshold (float): Battery percentage threshold to consider as "low".
+    """
+    def __init__(self, name, low_threshold=20.0):
+        super(IsBatteryLow, self).__init__(name)
+        self.low_threshold = low_threshold      # Low battery threshold (%)
+        self.blackboard = py_trees.blackboard.Blackboard()
+
+    def update(self):
+        if not self.blackboard.exists("battery_level"):
+            return py_trees.common.Status.FAILURE
+
+        battery_level = self.blackboard.get("battery_level")
+
+        # Logic: If battery level is below the threshold, return SUCCESS
+        if battery_level < self.low_threshold:
+            return py_trees.common.Status.SUCCESS
+            
+        return py_trees.common.Status.FAILURE
