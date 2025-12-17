@@ -191,13 +191,14 @@ flowchart LR
             ScanTopic[/`/scan`<br/>/]:::topic
             VisibleTopic[/`/vision/is_visible`/]:::topic
             TargetTopic[/`/vision/target`/]:::topic
+            BatteryTopic[/`/battery/status`/]:::topic
             ToBlackboard["topicsToBB.py"]:::input
         end
         style Writers fill:#f1f8e9,stroke:#33691e,stroke-width:1px,color:#000000
 
         %% --- 2. MEMORIA ---
         %% Aggiunte le nuove variabili chiave gestite
-        Blackboard[("🧠<br/>BLACKBOARD<br/><br/><i>- obstacle_distance<br/>- target_visible<br/>- target_error_x<br/>- target_area<br/>- is_prediction<br/>- last_valid_area<br/>- is_occluded</i>")]:::memory
+        Blackboard[("🧠<br/>BLACKBOARD<br/><br/><i>- obstacle_distance<br/>- target_visible<br/>- target_error_x<br/>- target_area<br/>- battery_level<br/>- is_prediction<br/>- last_valid_area<br/>- is_occluded</i>")]:::memory
 
         %% --- 3. LOGICA (LETTORI) ---
         subgraph Readers [LOGIC & ACTIONS]
@@ -207,6 +208,7 @@ flowchart LR
             subgraph Conditions [Conditions]
                 direction TB
                 CondObs{IsObstacleClose?}:::logic
+                CondBat{IsBatteryLow?}:::logic
                 CondReal{IsTargetReal?}:::logic
                 CondPred{IsTargetPredicted?}:::logic
                 CondClose{WasTargetClose?}:::logic
@@ -231,19 +233,21 @@ flowchart LR
         ScanTopic --> ToBlackboard
         VisibleTopic --> ToBlackboard
         TargetTopic --> ToBlackboard
+        BatteryTopic --> ToBlackboard
 
         ToBlackboard ==>|Aggiorna Chiavi| Blackboard
 
         %% --- CONNESSIONI DI LETTURA ---
         %% Le frecce indicano quali dati attivano quali comportamenti
         Blackboard -.->|obstacle_distance| CondObs
+        Blackboard -.->|battery_level| CondBat
         Blackboard -.->|target_visible<br/>is_prediction| CondReal
         Blackboard -.->|is_prediction| CondPred
         Blackboard -.->|last_valid_area| CondClose
         
         %% Collegamenti logici (semplificati per il diagramma)
-        CondObs --> ActStop
         CondObs --> ActEvade
+        CondBat --> ActStop
         CondReal --> ActTrack
         CondPred --> ActGhost
         CondClose --> ActRecover
@@ -254,10 +258,10 @@ flowchart LR
     style FoglioBianco fill:#FFFFFF,stroke:none,color:#000000
 
     %% --- STILI FRECCE ---
-    linkStyle 0,1,2 stroke-width:3px,stroke:#33691e,fill:none;
-    linkStyle 3 stroke-width:3px,stroke:#43a047,fill:none;
-    linkStyle 4,5,6,7,13 stroke-width:2px,stroke:#7b1fa2,fill:none,stroke-dasharray: 5 5;
-    linkStyle 8,9,10,11,12 stroke-width:1px,stroke:#bf360c,fill:none;
+    linkStyle 0,1,2,3 stroke-width:3px,stroke:#33691e,fill:none;
+    linkStyle 4 stroke-width:3px,stroke:#43a047,fill:none;
+    linkStyle 5,6,7,8,9,15 stroke-width:2px,stroke:#7b1fa2,fill:none,stroke-dasharray: 5 5;
+    linkStyle 10,11,12,13,14 stroke-width:1px,stroke:#bf360c,fill:none;
  ```
 
 ---
