@@ -148,7 +148,7 @@ Ensure your dashboard server is running (external to this repo). The robot will 
 | **ball_teleop** | `hunter_control` | Manual control for the target ball. | *(Keyboard Input)* | `/ball_cmd_vel` |
 | **ros_gz_bridge** | `ros_gz_bridge` | Bridges ROS 2 and Gazebo. | `/cmd_vel`<br>`/ball_cmd_vel` | `/odom`<br>`/scan`<br>`/camera/image_raw` |
 
-
+![ROS Graph Visualization](/static/ros_graph.jpg)
 
 ---
 
