@@ -47,6 +47,12 @@ Acts as the monitoring interface.
 - **Data Aggregation**: Collects system state (Battery, Vision, Lidar, Velocity).
 - **WebSocket Stream**: Pushes JSON telemetry and Base64-encoded video frames to an external dashboard (default: `http://localhost:5000`).
 
+### 5. Web Dashboard (`web_dashboard`)
+A standalone Flask application that visualizes the robot's telemetry.
+- **Real-time Graphs**: Plots tracking error, velocity, and battery levels.
+- **Video Feed**: Displays the live debug stream from the robot's vision system.
+- **Technology**: Built with Flask, Socket.IO, and Chart.js.
+
 ---
 
 ## 📦 Prerequisites & Requirements
@@ -135,6 +141,15 @@ Ensure your dashboard server is running (external to this repo). The robot will 
 - **Video Stream**: `/vision/debug_image`
 - **Data**: Battery, Lidar distance, Tracking error.
 
+### 4. Run the Web Dashboard
+To visualize the telemetry data, run the Flask server:
+
+```bash
+cd web_dashboard
+python3 dashboard_server.py
+```
+Then open your browser and navigate to `http://localhost:5000`.
+
 ---
 
 ## 🧩 Node Reference
@@ -164,13 +179,17 @@ Located in `src/hunter_bringup/config/params.yaml`:
 Located in `src/hunter_description/config/bridge.yaml`. Defines the topic mapping between ROS 2 and Gazebo.
 
 ---
-
-## 📂 Project Structure
-
-```plaintext
-Chimpanzee_MetalMonkeys/
-├── README.md                   # This file
-├── requirements.txt            # Python dependencies
+├── src/
+│   ├── hunter_bringup/         # Launch files and high-level config
+│   ├── hunter_control/         # Behavior Tree, Battery Sim, Teleop
+│   ├── hunter_description/     # URDF, Worlds, Bridge Config
+│   ├── hunter_perception/      # Vision pipeline (YOLO + Kalman)
+│   └── hunter_telemetry/       # WebSocket Telemetry
+├── web_dashboard/              # Flask Dashboard Server
+│   ├── dashboard_server.py     # Server entry point
+│   ├── static/                 # CSS, JS, Images
+│   └── templates/              # HTML templates
+``` requirements.txt            # Python dependencies
 ├── yolov8n.pt                  # YOLOv8 model weights
 ├── schema_*.md                 # Architecture diagrams
 ├── src/

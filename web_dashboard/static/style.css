@@ -1,0 +1,105 @@
+html, body {
+    height: 100vh; /* Forza l'altezza al 100% dello schermo */
+    margin: 0;
+    overflow: hidden; /* Nasconde le barre di scorrimento */
+    background-color: #121212;
+    color: #ffffff;
+    display: flex;
+    flex-direction: column;
+}
+
+/* HEADER: Altezza fissa */
+header {
+    flex: 0 0 auto; 
+    padding: 10px 20px;
+    background-color: #1a1a1a;
+    border-bottom: 1px solid #333;
+}
+
+/* CONTAINER PRINCIPALE: Riempie tutto lo spazio rimanente */
+.dashboard-container {
+    flex: 1 1 auto;
+    display: flex; /* Attiva le colonne affiancate */
+    padding: 15px;
+    gap: 15px; /* Spazio tra le colonne */
+    min-height: 0; /* TRUCCO FONDAMENTALE per Flexbox annidati */
+    height: 100%;
+}
+
+/* --- COLONNE --- */
+.col-left {
+    flex: 4; /* Occupa il 40% */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 0; /* Evita che il contenuto allarghi la colonna */
+}
+
+.col-right {
+    flex: 6; /* Occupa il 60% */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    min-width: 0;
+    height: 100%;
+}
+
+/* --- CARDS (RIQUADRI) --- */
+.card {
+    background-color: #1e1e1e;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+}
+
+.card-header {
+    flex: 0 0 auto; /* L'intestazione non si schiaccia */
+    padding: 8px 15px;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.card-body {
+    flex: 1 1 auto; /* Il corpo si espande */
+    position: relative; /* Necessario per Chart.js */
+    min-height: 0; /* Permette al grafico di rimpicciolirsi */
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* --- SPECIFICHE CARD --- */
+
+/* Sinistra: Il video prende più spazio dello stato */
+.video-card { flex: 2; } 
+.status-card { flex: 0 0 auto; } /* Altezza automatica basata sul contenuto */
+
+/* Destra: I due grafici si dividono lo spazio a metà */
+.chart-card { 
+    flex: 1 1 0;
+    display: flex; /* Permette al grafico di rimpicciolirsi */
+    flex-direction: column;
+    min-height: 0;
+}
+
+canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Video Feed */
+#videoFeed {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Mantiene le proporzioni */
+    background: #000;
+    border: 1px solid #444;
+}
+
+/* Colori Testo */
+.target-label { color: #ffc107; font-weight: bold; }
+.lidar-label { color: #0dcaf0; font-weight: bold; margin-bottom: 5px; display: block; }
