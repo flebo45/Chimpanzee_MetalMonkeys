@@ -14,19 +14,21 @@ def generate_launch_description():
     params_file = os.path.join(bringup_pkg, 'config', 'params.yaml')
 
     # 1. Simulation (The Stage)
-    # Include the simulation launch file from hunter_description
+    # Include another launch file, the simulation launch file from hunter_description like it is part of this one
+    # Con questo si va nel pacchetto hunter_description, si prende il file hunter_sim.launch.py e si istruisce ROS ad eseguire tutto ciò che c'è scritto lì
     sim_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(description_pkg, 'launch', 'hunter_sim.launch.py')
         )
     )
 
+    # Con questi blocchi di codice si definiscono i nodi (programmi eseguibili ROS) che verranno lanciati
     # 2. Perception (The Eyes)
     perception_node = Node(
-        package='hunter_perception',
-        executable='vision_node',
-        name='vision_node',
-        output='screen',
+        package='hunter_perception', # pacchetto dove si trova il codice
+        executable='vision_node', # nome dello script da lanciare definito nel setup.py del pacchetto
+        name='vision_node', # passiamo al nodo il file YAML dei parametri, così vision_node saprà che deve usare il modello yolov8n.pt e la soglia 0.4
+        output='screen', # stampa i print e i log direttamente in questo terminale
         parameters=[params_file]
     )
 
@@ -54,7 +56,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    return LaunchDescription([
+    return LaunchDescription([ # dice a ROS di avviare tutte queste quattro cose insieme
         sim_launch,
         perception_node,
         control_node,
